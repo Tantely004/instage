@@ -24,11 +24,7 @@ export default function useAuth() {
                 setError("Identifiant ou mot de passe incorrect")
             }
         } catch (err) {
-            if (err.response?.data?.error) {
-                setError(err.response.data.error)
-            } else {
-                setError("Erreur réseau. Vérifiez votre connexion.")
-            }
+            console.log(err);
         } finally {
             setLoading(false)
         }
