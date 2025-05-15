@@ -168,10 +168,10 @@ const DashboardAdmin = () => {
 
                     <div className="flex flex-col space-y-1">
                         <h4 className="text-sm">
-                            Rapports reçus
+                            Attestations
                         </h4>
                         <p className="font-bold text-indigo-400 text-3xl">
-                            1
+                            22
                         </p>
                     </div>
                 </div>   
