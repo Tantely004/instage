@@ -54,10 +54,8 @@ MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware',
 ]
 
-# Autorise uniquement React pendant le développement
-CORS_ALLOWED_ORIGINS = [
-    "http://localhost:5173",
-]
+# Autorise toutes les origines
+CORS_ALLOW_ALL_ORIGINS = True
 
 # Pour permettre l'envoi de cookies (sessions)
 CORS_ALLOW_CREDENTIALS = True
