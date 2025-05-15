@@ -9,7 +9,9 @@ import { Routes, Route, useLocation  } from 'react-router-dom'
 import Home from './pages/Home'
 import Login from './pages/Login'
 import LayoutIntern from './pages/intern/Layout'
+import LayoutSupervisor from './pages/supervisor/Layout'
 import Dashboard from './pages/intern/Dashboard'
+import DashboardSupervisor from './pages/supervisor/Dashboard'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -39,6 +41,10 @@ function App() {
 
               <Route path="/intern" element={<LayoutIntern />}>
                 <Route index path="dashboard" element={<Dashboard />} />
+              </Route>
+
+              <Route path="/supervisor" element={<LayoutSupervisor />}>
+                <Route index path="dashboard" element={<DashboardSupervisor />} />
               </Route>
             </Routes>
         </div>

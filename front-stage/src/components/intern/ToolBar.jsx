@@ -1,9 +1,9 @@
 import { useMemo } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom'
 import { Menubar } from 'primereact/menubar'
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
-import { InputText } from "primereact/inputtext";
+import { IconField } from "primereact/iconfield"
+import { InputIcon } from "primereact/inputicon"
+import { InputText } from "primereact/inputtext"
 
 import Logo from '../Logo'
 import imgProfile from '../../assets/images/img_profile_intern.jpg'
