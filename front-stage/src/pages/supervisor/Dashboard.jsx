@@ -8,7 +8,7 @@ import intern1 from '../../assets/images/fake/intern1.png'
 import intern2 from '../../assets/images/fake/intern2.png'
 import intern3 from '../../assets/images/img_profile_intern.jpg'
 
-const DashboardSupervisor = () => {
+const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
     const [chartData, setChartData] = useState({})
     const [chartOptions, setChartOptions] = useState({})
 
@@ -114,7 +114,7 @@ const DashboardSupervisor = () => {
             exit="out"
             variants={pageVariants}
             transition={pageTransition} 
-            className='w-[95%]'
+            className={`mb-12`}
         >
             <section className="grid grid-cols-4 gap-8 items-center">
                 <div className="bg-indigo-400 text-white p-4 rounded-lg flex items-center space-x-4">
@@ -183,7 +183,7 @@ const DashboardSupervisor = () => {
                         type="line" 
                         data={chartData} 
                         options={chartOptions}
-                        className='h-80 w-[36rem] mt-8' 
+                        className={`h-80 mt-8`}
                     />
                 </div>
 

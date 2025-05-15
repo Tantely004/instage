@@ -20,7 +20,7 @@ const SidebarSupervisor = ({ collapsed, setCollapsed }) => {
     const toggleSidebar = () => setCollapsed(!collapsed)
 
     return (
-        <div className={`h-screen bg-gray-50 border border-gray-100 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} flex flex-col`}>
+        <div className={`h-screen z-50 fixed bg-gray-50 border border-gray-100 shadow-lg transition-all duration-300 ${collapsed ? 'w-16' : 'w-64'} flex flex-col`}>
             <section className="flex items-center justify-between p-4">
                 {!collapsed && 
                     <div className="flex justify-center items-center mx-auto">

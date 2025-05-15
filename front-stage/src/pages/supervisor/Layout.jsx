@@ -16,7 +16,7 @@ const LayoutSupervisor = () => {
             <SidebarSupervisor collapsed={collapsed} setCollapsed={setCollapsed} />
 
             <div className="flex flex-col space-y-8">
-                <header className={`bg-gray-50 pl-8 ${collapsed ? 'pr-24' : 'pr-72'} h-20 fixed flex justify-between items-center w-full`}>
+                <header className={`bg-gray-50 z-30 pl-8 ${collapsed ? 'pl-24' : 'pl-72'} h-20 pr-8 fixed flex justify-between items-center w-full`}>
                     <div>
                         <h1 className="font-semibold text-xl">
                             Bienvenue à vous !
@@ -44,8 +44,8 @@ const LayoutSupervisor = () => {
                     </div>
                 </header>
 
-                <main className={`mt-28 ml-8`}>
-                    <Outlet />
+                <main className={`mt-28 ${collapsed ? 'ml-24 w-[90.5%]' : 'ml-72'} mr-8`}>
+                    <Outlet collapsed={collapsed} setCollapsed={setCollapsed}/>
                 </main>
             </div>
         </div>
