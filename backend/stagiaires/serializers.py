@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import User, Intern, Framer, Administrator
+from stagiaires.models import User, Intern, Instructor, Administrator
 
 class UserSerializer(serializers.ModelSerializer):
     class Meta:
@@ -8,21 +8,24 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class InternSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
     class Meta:
         model = Intern
-        fields = ['identifier', 'mail', 'name', 'firstname', 'contact', 'image', 'cv', 'role',
-                  'etablishment', 'sector', 'level']
+        fields = ['user', 'etablishment', 'sector', 'level']
 
 
-class FramerSerializer(serializers.ModelSerializer):
+class InstructorSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
     class Meta:
-        model = Framer
-        fields = ['identifier', 'mail', 'name', 'firstname', 'contact', 'image', 'cv', 'role',
-                  'management', 'department', 'position']
+        model = Instructor
+        fields = ['user', 'management', 'department', 'position']
 
 
 class AdministratorSerializer(serializers.ModelSerializer):
+    user = UserSerializer()
+
     class Meta:
         model = Administrator
-        fields = ['identifier', 'mail', 'name', 'firstname', 'contact', 'image', 'cv', 'role',
-                  'management', 'department', 'position']
+        fields = ['user', 'management', 'department', 'position']

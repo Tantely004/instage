@@ -2,8 +2,9 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework import status
 from django.contrib.auth.hashers import check_password
-from .models import User, Intern, Framer, Administrator
-from .serializers import UserSerializer, InternSerializer, FramerSerializer, AdministratorSerializer
+from .models import User, Intern, Instructor, Administrator
+from .serializers import UserSerializer, InternSerializer, InstructorSerializer, AdministratorSerializer
+
 
 class LoginAPIView(APIView):
     def post(self, request):
@@ -13,16 +14,16 @@ class LoginAPIView(APIView):
         try:
             user = User.objects.get(identifier=identifier)
             if check_password(password, user.password):
-                return Response({"message": "connexion réussie"}, status=status.HTTP_200_OK)
+                return Response({"message": "Connexion réussie"}, status=status.HTTP_200_OK)
             else:
-                return Response({"message": "mot de passe incorrect"}, status=status.HTTP_401_UNAUTHORIZED)
+                return Response({"message": "Mot de passe incorrect"}, status=status.HTTP_401_UNAUTHORIZED)
         except User.DoesNotExist:
-            return Response({"message": "identifiant introuvable"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"message": "Identifiant introuvable"}, status=status.HTTP_404_NOT_FOUND)
 
 
 class UserDetailAPIView(APIView):
     def get(self, request):
-        identifier = request.query_params.get('identifier')  # identifier en paramètre de requête
+        identifier = request.query_params.get('identifier')
 
         try:
             user = User.objects.get(identifier=identifier)
@@ -31,14 +32,25 @@ class UserDetailAPIView(APIView):
 
             detail_role = None
             if role == 'intern':
-                intern = Intern.objects.get(identifier=identifier)
-                detail_role = InternSerializer(intern).data
-            elif role == 'framer':
-                framer = Framer.objects.get(identifier=identifier)
-                detail_role = FramerSerializer(framer).data
+                try:
+                    intern = Intern.objects.get(user=user)
+                    detail_role = InternSerializer(intern).data
+                except Intern.DoesNotExist:
+                    detail_role = {"message": "Le détail du rôle 'intern' est introuvable."}
+
+            elif role == 'instructor':
+                try:
+                    instructor = Instructor.objects.get(user=user)
+                    detail_role = InstructorSerializer(instructor).data
+                except Instructor.DoesNotExist:
+                    detail_role = {"message": "Le détail du rôle 'instructor' est introuvable."}
+
             elif role == 'administrator':
-                admin = Administrator.objects.get(identifier=identifier)
-                detail_role = AdministratorSerializer(admin).data
+                try:
+                    admin = Administrator.objects.get(user=user)
+                    detail_role = AdministratorSerializer(admin).data
+                except Administrator.DoesNotExist:
+                    detail_role = {"message": "Le détail du rôle 'administrator' est introuvable."}
 
             return Response({
                 "identifier": user.identifier,
@@ -47,8 +59,9 @@ class UserDetailAPIView(APIView):
                 "firstname": user.firstname,
                 "contact": user.contact,
                 "image": user.image.url if user.image else None,
+                "cv": user.cv.url if user.cv else None,
                 "detail_role": detail_role
-            })
+            }, status=status.HTTP_200_OK)
 
         except User.DoesNotExist:
             return Response({"message": "Utilisateur introuvable"}, status=status.HTTP_404_NOT_FOUND)

@@ -51,7 +51,19 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'corsheaders.middleware.CorsMiddleware',
 ]
+
+# Autorise uniquement React pendant le développement
+CORS_ALLOWED_ORIGINS = [
+    "http://localhost:5173",
+]
+
+# Pour permettre l'envoi de cookies (sessions)
+CORS_ALLOW_CREDENTIALS = True
+
+SESSION_COOKIE_SAMESITE = "Lax"  # Ou "None" si tu veux autoriser les sous-domaines
+SESSION_COOKIE_SECURE = False    # Met True si tu es en HTTPS uniquement
 
 ROOT_URLCONF = 'backend.urls'
 

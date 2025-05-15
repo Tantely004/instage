@@ -2,7 +2,6 @@ from django.db import models
 from django.contrib.auth.models import AbstractBaseUser, PermissionsMixin, BaseUserManager
 from django.contrib.auth.hashers import make_password
 
-
 # ===================== #
 #     Custom Manager    #
 # ===================== #
@@ -10,11 +9,10 @@ class CustomUserManager(BaseUserManager):
     def create_user(self, identifier, password=None, **extra_fields):
         if not identifier:
             raise ValueError("L'identifiant est requis.")
-        user = self.model(identifier=identifier, **extra_fields)
-        if password:
-            user.set_password(password)
-        else:
+        if not password:
             raise ValueError("Un mot de passe est requis.")
+        user = self.model(identifier=identifier, **extra_fields)
+        user.set_password(password)
         user.save()
         return user
 
@@ -30,7 +28,7 @@ class CustomUserManager(BaseUserManager):
 class User(AbstractBaseUser, PermissionsMixin):
     ROLE_CHOICES = [
         ('intern', 'Intern'),
-        ('framer', 'Framer'),
+        ('instructor', 'Instructor'),
         ('administrator', 'Administrator'),
     ]
 
@@ -60,7 +58,6 @@ class User(AbstractBaseUser, PermissionsMixin):
     def __str__(self):
         return f"{self.identifier} - {self.role}"
 
-    # Empêche Django d'attendre un champ 'username'
     def get_username(self):
         return self.identifier
 
@@ -79,14 +76,14 @@ class Intern(models.Model):
         return f"Intern: {self.user.identifier}"
 
 
-class Framer(models.Model):
+class Instructor(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, primary_key=True)
     management = models.CharField(max_length=100)
     department = models.CharField(max_length=100)
     position = models.CharField(max_length=100)
 
     def __str__(self):
-        return f"Framer: {self.user.identifier}"
+        return f"Instructor: {self.user.identifier}"
 
 
 class Administrator(models.Model):

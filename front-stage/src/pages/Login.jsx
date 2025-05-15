@@ -1,5 +1,4 @@
 import { useState } from "react"
-import { useNavigate } from "react-router-dom"
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
 import { InputText } from "primereact/inputtext"
@@ -8,13 +7,11 @@ import { Button } from "primereact/button"
 import { motion } from "framer-motion"
 
 import Logo from '../components/Logo'
-
 import loginImage from '../assets/images/login-image.jpg'
+import useAuth from '../composables/useAuth'
 
 const Login = () => {
-    const goBack = () => {
-        window.history.back()
-    }
+    const goBack = () => window.history.back()
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -22,20 +19,15 @@ const Login = () => {
         out: { opacity: 0, y: -5 },
     }
 
-    const pageTransition = {
-        duration: 0.5,
-    }
+    const pageTransition = { duration: 0.5 }
 
-    const [ loading, setLoading ] = useState(false)
-    const navigate = useNavigate()
+    const [identifier, setIdentifier] = useState("")
+    const [password, setPassword] = useState("")
+    const { login, loading, error } = useAuth()
 
-    const handleLogin = () => {
-        setLoading(true)
-
-        setTimeout(() => {
-            navigate('/intern/dashboard')
-            setLoading(false)
-        }, 3000);
+    const handleLogin = async (e) => {
+        e.preventDefault()
+        await login(identifier, password)
     }
 
     return (
@@ -45,7 +37,7 @@ const Login = () => {
             exit="out"
             variants={pageVariants}
             transition={pageTransition}
-            class="grid grid-cols-2 h-screen overflow-hidden"
+            className="grid grid-cols-2 h-screen overflow-hidden"
         >
             <div className="relative">
                 <div className='absolute top-6 left-12'>
@@ -77,20 +69,25 @@ const Login = () => {
                     onClick={goBack}
                 />
 
-                <form className='mt-12'>
-                    <div class="flex flex-col space-y-6 items-center">
+                <form className='mt-12' onSubmit={handleLogin}>
+                    <div className="flex flex-col space-y-6 items-center">
                         <h4 className='text-center text-blue-800/80 text-3xl font-semibold'>
                             Bonjour !
                         </h4>
-                        <p class="text-center w-[75%]">
+                        <p className="text-center w-[75%]">
                             Pour vous connecter, renseignez votre identifiant ainsi que votre mot de passe
                         </p>
                     </div>
 
                     <div className="mt-12 flex flex-col space-y-6 items-center">
                         <IconField iconPosition="left">
-                            <InputIcon className="pi pi-user text-indigo-400"> </InputIcon>
-                            <InputText placeholder="Identifiant" className="w-[28rem]"/>
+                            <InputIcon className="pi pi-user text-indigo-400" />
+                            <InputText
+                                placeholder="Identifiant"
+                                className="w-[28rem]"
+                                value={identifier}
+                                onChange={(e) => setIdentifier(e.target.value)}
+                            />
                         </IconField>
 
                         <div className="relative">
@@ -101,16 +98,24 @@ const Login = () => {
                                 pt={{
                                     input: { className: "indent-7 w-[28rem] z-10" },
                                 }}
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
                             />
                         </div>
+
+                        {error && (
+                            <p className="text-red-600 text-sm text-center w-[28rem]">
+                                {error}
+                            </p>
+                        )}
                     </div>
 
                     <Button
-                         label="Se connecter"
-                         unstyled
-                         loading={loading}
-                         className="cursor-pointer flex justify-center px-6 items-center mx-auto mt-12 bg-gray-600 w-[28rem] border-none text-white font-medium py-2 rounded"
-                         onClick={handleLogin}
+                        label="Se connecter"
+                        unstyled
+                        loading={loading}
+                        className="cursor-pointer flex justify-center px-6 items-center mx-auto mt-12 bg-gray-600 w-[28rem] border-none text-white font-medium py-2 rounded"
+                        type="submit"
                     />
                 </form>
             </div>
