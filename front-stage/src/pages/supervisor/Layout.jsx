@@ -44,7 +44,7 @@ const LayoutSupervisor = () => {
                     </div>
                 </header>
 
-                <main className={`mt-20 ml-4 ${collapsed ? 'mr-24' : 'mr-72'}`}>
+                <main className={`mt-28 ml-8`}>
                     <Outlet />
                 </main>
             </div>

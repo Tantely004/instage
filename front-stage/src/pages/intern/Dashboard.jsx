@@ -247,7 +247,7 @@ const DashboardIntern = () => {
                                          
                                     </p>
                                     <span className="text-xs bg-indigo-100 text-indigo-600 font-semibold px-2 py-0.5 rounded-full">
-                                        Salle {item.room}
+                                        Porte {item.room}
                                     </span>
                                 </div>
                                 
