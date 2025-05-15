@@ -6,8 +6,7 @@ import { InputSwitch } from 'primereact/inputswitch'
 
 import Logo from '../Logo'
 
-const SidebarSupervisor = () => {
-    const [collapsed, setCollapsed] = useState(false)
+const SidebarSupervisor = ({ collapsed, setCollapsed }) => {
     const [checked, setChecked] = useState(false)
 
     const menuItems = [
@@ -45,7 +44,8 @@ const SidebarSupervisor = () => {
                             to={item.path}
                             id={`sidebar-item-${index}`}
                             className={({ isActive }) => 
-                                `flex items-center px-4 py-3 rounded-md transition-all cursor-pointer hover:bg-indigo-200 
+                                `flex items-center px-4 rounded-md transition-all cursor-pointer hover:bg-indigo-200
+                                ${collapsed ? 'py-5': 'py-3'} 
                                 ${isActive ? 'bg-indigo-300 text-white font-medium' : 'text-black/70'}`
                             }
                         >
@@ -57,23 +57,33 @@ const SidebarSupervisor = () => {
             </nav>
 
             <section className="mt-auto mb-8">
-                <div className="flex justify-center items-center space-x-6">
-                    <i 
-                        className="pi pi-sun text-black/60"
-                        title="Mode jour"
-                    />
-                    <InputSwitch checked={checked} onChange={(e) => setChecked(e.value)} />
-                    <i 
-                        className="pi pi-moon text-black/50"
-                        title="Mode nuit"
-                    />
+                <div className={`flex justify-center items-center ${collapsed ? '' : 'space-x-6'}`}>
+                    {collapsed ? (
+                        <i 
+                            className={`pi ${checked ? 'pi-moon text-black/50' : 'pi-sun text-black/60'} cursor-pointer text-lg`} 
+                            title={checked ? 'Mode nuit' : 'Mode jour'}
+                            onClick={() => setChecked(!checked)}
+                        />
+                    ) : (
+                        <>
+                            <i 
+                                className="pi pi-sun text-black/60"
+                                title="Mode jour"
+                            />
+                            <InputSwitch checked={checked} onChange={(e) => setChecked(e.value)} />
+                            <i 
+                                className="pi pi-moon text-black/50"
+                                title="Mode nuit"
+                            />
+                        </>
+                    )}
                 </div>
 
                 <Button 
-                    label="Déconnexion"
+                    label={collapsed ? '' : 'Déconnexion'}
                     icon="pi pi-sign-out"
                     unstyled
-                    className="h-10 bg-indigo-400 gap-x-3 rounded-md px-6 text-white flex w-48 justify-center items-center mx-auto text-sm mt-8"
+                    className={`h-10 bg-indigo-400 rounded-md text-white flex justify-center items-center mx-auto text-sm mt-8 transition-all duration-300 ${collapsed ? 'w-12 px-0' : 'w-48 px-6 gap-x-3 '}`}
                 />
             </section>
         </div>

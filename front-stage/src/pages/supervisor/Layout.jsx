@@ -1,3 +1,4 @@
+import { useState } from "react"
 import { Outlet } from "react-router-dom"
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
@@ -8,25 +9,23 @@ import SidebarSupervisor from "../../components/supervisor/Sidebar"
 import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
 
 const LayoutSupervisor = () => {
+    const [collapsed, setCollapsed] = useState(false)
+
     return (
         <div className="flex">
-            <div>
-                <SidebarSupervisor />
-            </div>
+            <SidebarSupervisor collapsed={collapsed} setCollapsed={setCollapsed} />
 
             <div className="flex flex-col space-y-8">
-                <header className="bg-gray-50 pl-8 pr-72 h-20 fixed flex justify-between items-center w-full">
-                    <div className="">
+                <header className={`bg-gray-50 pl-8 ${collapsed ? 'pr-24' : 'pr-72'} h-20 fixed flex justify-between items-center w-full`}>
+                    <div>
                         <h1 className="font-semibold text-xl">
                             Bienvenue à vous !
                         </h1>
                     </div>
 
                     <div>
-                        <IconField 
-                            iconPosition="left"
-                        >
-                            <InputIcon className="pi pi-search"/>
+                        <IconField iconPosition="left">
+                            <InputIcon className="pi pi-search" />
                             <InputText
                                 placeholder="Rechercher" 
                                 size="small"
@@ -45,7 +44,7 @@ const LayoutSupervisor = () => {
                     </div>
                 </header>
 
-                <main className="mt-20 ml-4 mr-72">
+                <main className={`mt-20 ml-4 ${collapsed ? 'mr-24' : 'mr-72'}`}>
                     <Outlet />
                 </main>
             </div>
