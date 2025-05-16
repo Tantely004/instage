@@ -1,10 +1,8 @@
-import './index.css'
 import { useEffect, useState } from 'react'
-import 'primereact/resources/themes/lara-light-indigo/theme.css'
 import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
-import { AnimatePresence} from 'framer-motion'
-import { Routes, Route, useLocation  } from 'react-router-dom'
+import { AnimatePresence } from 'framer-motion'
+import { Routes, Route, useLocation } from 'react-router-dom'
 
 import Home from './pages/Home'
 import Login from './pages/Login'
@@ -16,8 +14,29 @@ import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
 
 function App() {
-  const [loading, setLoading] = useState(false)
+      const [loading, setLoading] = useState(false)
+      const [isDarkMode, setIsDarkMode] = useState(() => {
+      return localStorage.getItem('theme') === 'dark'
+  })
   const location = useLocation()
+
+  useEffect(() => {
+    if (isDarkMode) {
+        document.documentElement.classList.add('dark')
+        import('primereact/resources/themes/lara-dark-indigo/theme.css').then(() => {
+            const lightTheme = document.querySelector('link[href*="lara-light-indigo"]')
+            if (lightTheme) lightTheme.remove()
+        })
+      localStorage.setItem('theme', 'dark')
+    } else {
+        document.documentElement.classList.remove('dark')
+        import('primereact/resources/themes/lara-light-indigo/theme.css').then(() => {
+            const darkTheme = document.querySelector('link[href*="lara-dark-indigo"]')
+            if (darkTheme) darkTheme.remove()
+        })
+        localStorage.setItem('theme', 'light')
+    }
+  }, [isDarkMode])
 
   useEffect(() => {
     const handleStart = () => setLoading(true)
@@ -27,32 +46,31 @@ function App() {
     window.addEventListener('load', handleComplete)
 
     return () => {
-      window.removeEventListener('beforeunload', handleStart)
-      window.removeEventListener('load', handleComplete)
+        window.removeEventListener('beforeunload', handleStart)
+        window.removeEventListener('load', handleComplete)
     }
   }, [])
 
   return (
     <>
-      <AnimatePresence mode='wait'>
+      <AnimatePresence mode="wait">
         <div>
             <Routes key={location.pathname} location={location}>
-              <Route path="/" element={<Home />} />
-              <Route path="/login" element={<Login />} />
-
-              {/** INTERN */}
-              <Route path="/intern" element={<LayoutIntern />}>
-                <Route index path="dashboard" element={<Dashboard />} />
+                <Route path="/" element={<Home />} />
+                  <Route path="/login" element={<Login />} />
+                  <Route path="/intern" element={<LayoutIntern />}>
+                  <Route index path="dashboard" element={<Dashboard />} />
               </Route>
 
-              {/** SUPERVISOR */}
-              <Route path="/supervisor" element={<LayoutSupervisor />}>
-                <Route index path="dashboard" element={<DashboardSupervisor />} />
+              <Route 
+                  path="/supervisor" 
+                  element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
+              >
+                  <Route index path="dashboard" element={<DashboardSupervisor />} />
               </Route>
 
-              {/** ADMIN */}
               <Route path="/admin" element={<LayoutAdmin />}>
-                <Route index path="dashboard" element={<DashboardAdmin />} />
+                  <Route index path="dashboard" element={<DashboardAdmin />} />
               </Route>
             </Routes>
         </div>
