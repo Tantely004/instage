@@ -3,12 +3,13 @@ import { Chart } from 'primereact/chart'
 import { Avatar } from 'primereact/avatar'
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
+import { useOutletContext } from "react-router-dom"
 
 import intern1 from '../../assets/images/fake/intern1.png'
 import intern2 from '../../assets/images/fake/intern2.png'
 import intern3 from '../../assets/images/img_profile_intern.jpg'
 
-const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
+const DashboardSupervisor = ({isDarkMode}) => {
     const [chartData, setChartData] = useState({})
     const [chartOptions, setChartOptions] = useState({})
 
@@ -49,6 +50,12 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
         },
     ]
 
+    const getChartColors = (isDark) => {
+        return {
+            textColor: isDark ? '#f3f4f6' : '#1f2937',
+        }
+    }
+
     useEffect(() => {
         const documentStyle = getComputedStyle(document.documentElement)
         const textColor = documentStyle.getPropertyValue('--text-color')
@@ -61,14 +68,14 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                     label: 'Insi',
                     data: [41, 42, 43, 43, 44],
                     fill: false,
-                    borderColor: documentStyle.getPropertyValue('--indigo-500'),
+                    borderColor: documentStyle.getPropertyValue(isDarkMode ? '--indigo-300' : '--indigo-500'),
                     tension: 0.4
                 },
                 {
                     label: 'MyFinancial',
                     data: [1, 3, 7, 8, 10],
                     fill: false,
-                    borderColor: documentStyle.getPropertyValue('--gray-300'),
+                    borderColor: documentStyle.getPropertyValue(isDarkMode ? '--gray-500' : '--gray-300'),
                     tension: 0.4
                 }
             ]
@@ -117,7 +124,7 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
             className={`mb-12`}
         >
             <section className="grid grid-cols-4 gap-8 items-center">
-                <div className="bg-indigo-400 text-white p-4 rounded-lg flex items-center space-x-4">
+                <div className="bg-indigo-400 dark:!bg-indigo-500 text-white p-4 rounded-lg flex items-center space-x-4">
                     <i className="pi pi-users text-2xl"/>
 
                     <div className="flex flex-col space-y-1">
@@ -130,7 +137,7 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                     </div>
                 </div>  
 
-                <div className="bg-indigo-400 text-white p-4 rounded-lg flex items-center space-x-4">
+                <div className="bg-indigo-400 dark:!bg-indigo-500 text-white p-4 rounded-lg flex items-center space-x-4">
                     <i className="pi pi-users text-2xl"/>
 
                     <div className="flex flex-col space-y-1">
@@ -143,7 +150,7 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                     </div>
                 </div>  
 
-                <div className="bg-indigo-400 text-white p-4 rounded-lg flex items-center space-x-4">
+                <div className="bg-indigo-400 dark:!bg-indigo-500 text-white p-4 rounded-lg flex items-center space-x-4">
                     <i className="pi pi-briefcase text-2xl"/>
 
                     <div className="flex flex-col space-y-1">
@@ -156,7 +163,7 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                     </div>
                 </div>    
 
-                <div className="bg-indigo-400 text-white p-4 rounded-lg flex items-center space-x-4">
+                <div className="bg-indigo-400 dark:!bg-indigo-500 text-white p-4 rounded-lg flex items-center space-x-4">
                     <i className="pi pi-file text-2xl"/>
 
                     <div className="flex flex-col space-y-1">
@@ -171,9 +178,9 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
             </section>
 
             <section className="mt-8 grid grid-cols-3 gap-8 w-full">
-                <div className="bg-white col-span-2 shadow p-6 rounded-lg">
-                    <h3 className="flex justify-between items-center">
-                        <span className="font-semibold text-lg">
+                <div className="bg-white dark:!bg-gray-700 col-span-2 shadow p-6 rounded-lg">
+                    <h3 className="flex justify-between items-center dark:text-white">
+                        <span className="font-semibold text-lge">
                             Avancement global des projets
                         </span>
                         <i className="pi pi-ellipsis-v cursor-pointer"/>
@@ -187,15 +194,15 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                     />
                 </div>
 
-                <div className="col-span-1 bg-white shadow p-6 rounded-lg">
+                <div className="col-span-1 bg-white dark:bg-gray-700 shadow p-6 rounded-lg">
                     <h3 className="flex justify-between items-center">
-                        <span className="text-indigo-500 font-semibold text-lg">
+                        <span className="text-indigo-500 dark:!text-indigo-400 font-semibold text-lg">
                             Entrevue à venir
                         </span>
-                        <i className="pi pi-ellipsis-v cursor-pointer"/>
+                        <i className="pi pi-ellipsis-v cursor-pointer dark:text-white"/>
                     </h3>
 
-                    <p className='text-sm mt-4'>
+                    <p className='text-sm mt-4 dark:text-white'>
                         Consulter votre planning d'entrevue à venir ici
                     </p>
 
@@ -203,7 +210,7 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                         {interviews.map((appt, index) => (
                         <div 
                             key={index} 
-                            className="flex items-center justify-between bg-gray-100 p-3 rounded-md"
+                            className="flex items-center justify-between bg-gray-100 dark:!bg-gray-600 dark:!text-white p-3 rounded-md"
                         >
                             <div className="flex items-center space-x-3">
                                 <Avatar 
@@ -215,14 +222,14 @@ const DashboardSupervisor = ({ collapsed, setCollapsed }) => {
                                     <div className="font-medium text-sm">
                                         {appt.intern}
                                     </div>
-                                    <div className="text-gray-500 text-xs">
+                                    <div className="text-gray-500 dark:!text-gray-300 text-xs">
                                         {appt.reason}
                                     </div>
                                 </div>
                             </div>
 
                             <div className="text-right">
-                                <div className="text-xs text-gray-500">{appt.date}</div>
+                                <div className="text-xs text-gray-500 dark:!text-gray-300">{appt.date}</div>
                                 <div className="font-semibold text-sm">{appt.time}</div>
                             </div>
                         </div>
