@@ -12,8 +12,10 @@ import Dashboard from './pages/intern/Dashboard'
 import DashboardSupervisor from './pages/supervisor/Dashboard'
 import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
+import PlanningIntern from './pages/intern/Planning'
 
 function App() {
+      // eslint-disable-next-line no-unused-vars
       const [loading, setLoading] = useState(false)
       const [isDarkMode, setIsDarkMode] = useState(() => {
       return localStorage.getItem('theme') === 'dark'
@@ -57,21 +59,23 @@ function App() {
         <div>
             <Routes key={location.pathname} location={location}>
                 <Route path="/" element={<Home />} />
-                  <Route path="/login" element={<Login />} />
-                  <Route path="/intern" element={<LayoutIntern />}>
+                <Route path="/login" element={<Login />} />  
+
+                <Route path='/intern' element={<LayoutIntern />}>
                   <Route index path="dashboard" element={<Dashboard />} />
-              </Route>
+                  <Route index path="planning" element={<PlanningIntern />} />
+                </Route>
 
-              <Route 
-                  path="/supervisor" 
-                  element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
-              >
-                  <Route index path="dashboard" element={<DashboardSupervisor />} />
-              </Route>
+                <Route 
+                    path="/supervisor" 
+                    element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
+                >
+                    <Route index path="dashboard" element={<DashboardSupervisor />} />
+                </Route>
 
-              <Route path="/admin" element={<LayoutAdmin />}>
-                  <Route index path="dashboard" element={<DashboardAdmin />} />
-              </Route>
+                <Route path="/admin" element={<LayoutAdmin />}>
+                    <Route index path="dashboard" element={<DashboardAdmin />} />
+                </Route>
             </Routes>
         </div>
       </AnimatePresence>

@@ -20,7 +20,7 @@ const Toolbar = () => {
             className: location.pathname === '/intern/dashboard' ? 'bg-indigo-200 hover:bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
         },
         {
-            label: 'Calendrier',
+            label: 'Planning',
             icon: 'pi pi-calendar',
             command: () => navigate('/intern/planning'),
             className: location.pathname === '/intern/planning' ? 'bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
