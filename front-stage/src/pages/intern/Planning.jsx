@@ -1,7 +1,11 @@
+/* eslint-disable no-unused-vars */
 import { useState } from 'react'
 import { Calendar } from 'primereact/calendar'
+import { Button } from 'primereact/button'
 import { locale, addLocale } from 'primereact/api'
 import { motion } from "framer-motion"
+
+import imgPlanning from "../../assets/images/img-planning.png"
 
 const PlanningIntern = () => {
     const [date, setDate] = useState(null)
@@ -38,15 +42,43 @@ const PlanningIntern = () => {
             className="px-16 mb-16"
         >
             <section className="grid grid-cols-3 gap-8">
-                <div className="col-span-2 grid grid-cols-2 gap-6 bg-white shadow border border-gray-200 rounded-lg">
-                    <div>
-                        <h1 className='text-indigo-500'>
+                <div className='col-span-2 p-8 bg-white shadow border border-gray-200 rounded-lg'>
+                    <h1 className='flex justify-between items-center'>
+                        <span className='text-indigo-500 font-bold text-3xl'>
                             Planning
-                        </h1>
-                    </div>
+                        </span>
+                        <i 
+                            className='pi pi-ellipsis-v cursor-pointer hover:text-indigo-400'
+                            title="Options"
+                        />
+                    </h1>
 
-                    <div>
-                        .
+                    <div className="grid grid-cols-2 gap-8 mt-6">
+                        <div>
+                            <img 
+                                src={imgPlanning} 
+                                class="flex justify-center items-center mx-auto mt-4 w-64"
+                            />
+                        </div>
+
+                        <div>
+                            <p>
+                                Suivez toutes les étapes de votre projet de stage, vos tâches hebdomadaires, les points de rendez-vous avec votre encadrant, et les jalons importants jusqu’à la fin du stage.
+                            </p>
+                            <div className='mt-8 flex flex-col'>
+                                <Button
+                                    icon="pi pi-plus"
+                                    label='Nouvelle chronogramme'
+                                    className='!bg-gray-600 hover:!bg-gray-700 !border-none'
+                                />
+                                <Button
+                                    icon="pi pi-google"
+                                    label='Synchroniser avec Google'
+                                    className='!mt-4 !border-none'
+                                />
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
