@@ -10,6 +10,7 @@ import dayGridPlugin from '@fullcalendar/daygrid'
 import frLocale from '@fullcalendar/core/locales/fr'
 
 import imgPlanning from "../../../assets/images/img-planning.png"
+import imgIntern from "../../../assets/images/img_profile_intern.jpg"
 
 const PlanningIndex = () => {
     const [date, setDate] = useState(null)
@@ -304,16 +305,29 @@ const PlanningIndex = () => {
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
                                     <i className='pi pi-box text-indigo-500'/>
-                                    <p className='mt-4 text-sm text-center text-black/40'>
+                                    <p className='text-sm text-black/40'>
                                         Aucun livrable demandé pour le moment
                                     </p>
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
                                     <i className='pi pi-file text-indigo-500'/>
-                                    <p className='mt-4 text-sm text-center text-black/40'>
+                                    <p className='text-sm text-black/40'>
                                         Aucun fichier associé pour le moment
                                     </p>
+                                </div>
+
+                                <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-6'>
+                                    <i className='pi pi-users text-indigo-500'/>
+                                    <div className='flex flex-col space-y-2 text-sm text-black/40'>
+                                        <h6 className='font-bold text-black/70'>
+                                            2 participants
+                                        </h6>
+                                        <div className='flex space-x-2 items-center'>
+                                            <img src={imgIntern} className='w-10 h-10 border border-gray-100 rounded-full' />
+                                            <img src={imgIntern} className='w-10 h-10 border border-gray-100 rounded-full' />
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         </motion.div>
