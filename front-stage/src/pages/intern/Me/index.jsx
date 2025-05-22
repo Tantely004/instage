@@ -1,8 +1,9 @@
 /* eslint-disable no-unused-vars */
+import { Divider } from "primereact/divider"
 import { motion } from "framer-motion"
 
 import imgIntern from "../../../assets/images/img_profile_intern.jpg"
-import { Divider } from "primereact/divider"
+import imgSupervisor from "../../../assets/images/img_profile_supervisor.png"
 
 const MyInternship = () => {
     const pageVariants = {
@@ -113,6 +114,22 @@ const MyInternship = () => {
                                 encadreur professionnel
                             </span>
                         </h3>
+
+                        <div className="mt-6 flex space-x-4 items-center">
+                            <img src={imgSupervisor} className="w-16 h-16 rounded-full" />
+
+                            <div className="flex flex-col space-y-1">
+                                <h5 className="font-bold">
+                                    Mandimbisoa Rakoto
+                                </h5>
+                                <p className="text-xs">
+                                    <i className="pi pi-building-columns"/> DSI
+                                </p>
+                                <p>
+                                    Responsable informatique
+                                </p>
+                            </div>
+                        </div>
                     </div>
 
                     <div className="col-span-2">
