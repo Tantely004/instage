@@ -3,18 +3,24 @@ import 'primereact/resources/primereact.min.css'
 import 'primeicons/primeicons.css'
 import { AnimatePresence } from 'framer-motion'
 import { Routes, Route, useLocation } from 'react-router-dom'
+import axios from 'axios'  // Import axios ici
 
+// Pages publiques
 import Home from './pages/Home'
 import Login from './pages/Login'
+
+// Layouts et Dashboards
 import LayoutIntern from './pages/intern/Layout'
-import LayoutSupervisor from './pages/supervisor/Layout'
 import Dashboard from './pages/intern/Dashboard'
+
+import LayoutSupervisor from './pages/supervisor/Layout'
 import DashboardSupervisor from './pages/supervisor/Dashboard'
+
 import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
 
-// Middleware d’authentification
-import Auth from './middleware/Auth'
+// Middleware
+import RequireAuth from './middleware/RequireAuth'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -23,6 +29,17 @@ function App() {
   })
   const location = useLocation()
 
+  // --- Nettoyage du header Authorization selon le token dans localStorage ---
+  useEffect(() => {
+    const token = localStorage.getItem('access_token')
+    if (!token) {
+      delete axios.defaults.headers.common['Authorization']
+    } else {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+    }
+  }, [])  // Au montage du composant App
+
+  // Thème dynamique
   useEffect(() => {
     if (isDarkMode) {
       document.documentElement.classList.add('dark')
@@ -41,6 +58,7 @@ function App() {
     }
   }, [isDarkMode])
 
+  // Gestion du chargement
   useEffect(() => {
     const handleStart = () => setLoading(true)
     const handleComplete = () => setLoading(false)
@@ -59,18 +77,20 @@ function App() {
       <AnimatePresence mode="wait">
         <div>
           <Routes key={location.pathname} location={location}>
+
+            {/* Routes publiques */}
             <Route path="/" element={<Home />} />
             <Route path="/login" element={<Login />} />
 
             {/* Routes Intern sécurisées */}
-            <Route element={<Auth allowedRoles={['intern']} />}>
+            <Route element={<RequireAuth allowedRoles={['intern']} />}>
               <Route path="/intern" element={<LayoutIntern />}>
                 <Route index path="dashboard" element={<Dashboard />} />
               </Route>
             </Route>
 
-            {/* Routes Supervisor/Instructors sécurisées */}
-            <Route element={<Auth allowedRoles={['supervisor', 'instructor']} />}>
+            {/* Routes Supervisor & Instructor sécurisées */}
+            <Route element={<RequireAuth allowedRoles={['supervisor', 'instructor']} />}>
               <Route path="/supervisor" element={
                 <LayoutSupervisor isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
               }>
@@ -79,11 +99,12 @@ function App() {
             </Route>
 
             {/* Routes Admin sécurisées */}
-            <Route element={<Auth allowedRoles={['admin', 'administrator']} />}>
+            <Route element={<RequireAuth allowedRoles={['admin', 'administrator']} />}>
               <Route path="/admin" element={<LayoutAdmin />}>
                 <Route index path="dashboard" element={<DashboardAdmin />} />
               </Route>
             </Route>
+
           </Routes>
         </div>
       </AnimatePresence>
