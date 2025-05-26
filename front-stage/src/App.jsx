@@ -14,6 +14,7 @@ import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
 import PlanningIndex from './pages/intern/Planning/index'
 import MyInternship from './pages/intern/Me'
+import CreatePlanning from './pages/intern/Planning/Create'
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -65,6 +66,7 @@ function App() {
                 <Route path='/intern' element={<LayoutIntern />}>
                   <Route index path="dashboard" element={<Dashboard />} />
                   <Route index path="planning" element={<PlanningIndex />} />
+                  <Route index path="planning/create" element={<CreatePlanning />} />
                   <Route index path="me" element={<MyInternship />} />
                 </Route>
 

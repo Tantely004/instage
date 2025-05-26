@@ -117,7 +117,7 @@ const MyInternship = () => {
 
                         <div className="mt-6 flex space-x-4 items-center">
                             <img src={imgSupervisor} className="w-16 h-16 rounded-full" />
-
+        
                             <div className="flex flex-col space-y-1">
                                 <h5 className="font-bold">
                                     Mandimbisoa Rakoto

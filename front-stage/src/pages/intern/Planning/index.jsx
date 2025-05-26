@@ -8,11 +8,13 @@ import { motion, AnimatePresence } from "framer-motion"
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import frLocale from '@fullcalendar/core/locales/fr'
+import { useNavigate } from 'react-router-dom'
 
 import imgPlanning from "../../../assets/images/img-planning.png"
 import imgIntern from "../../../assets/images/img_profile_intern.jpg"
 
 const PlanningIndex = () => {
+    const navigate = useNavigate()
     const [date, setDate] = useState(null)
     const [selectedEvent, setSelectedEvent] = useState(null)
 
@@ -176,7 +178,8 @@ const PlanningIndex = () => {
                                 <Button
                                     icon="pi pi-plus"
                                     label='Nouveau chronogramme'
-                                    className='!bg-gray-600 hover:!bg-gray-700 !border-none'
+                                    className='!bg-gray-600 !text-white hover:!no-underline hover:!bg-gray-700 !border-none'
+                                    onClick={ () => navigate("create") }
                                 />
                                 <Button
                                     icon="pi pi-google"
