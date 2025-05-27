@@ -7,10 +7,9 @@ axios.interceptors.response.use(
     response => response,
     async error => {
         const originalRequest = error.config
-        if (error.response.status === 401 && !originalRequest._retry) {
+        if (error.response?.status === 401 && !originalRequest._retry) {
             originalRequest._retry = true
             try {
-                // eslint-disable-next-line no-undef
                 const newAccessToken = await refreshToken()
                 originalRequest.headers['Authorization'] = `Bearer ${newAccessToken}`
                 return axios(originalRequest)
@@ -27,7 +26,7 @@ export default function useAuth() {
     const [error, setError] = useState(null)
     const navigate = useNavigate()
 
-    //Connexion avec gestion des tokens JWT
+    // Connexion avec gestion des tokens JWT
     const login = async (identifier, password) => {
         setLoading(true)
         setError(null)
@@ -40,11 +39,26 @@ export default function useAuth() {
             )
 
             if (response.status === 200) {
+                const user = response.data.user
+                const role = user.role
+
                 localStorage.setItem('access_token', response.data.access)
                 localStorage.setItem('refresh_token', response.data.refresh)
-                localStorage.setItem('user', JSON.stringify(response.data.user))
+                localStorage.setItem('user', JSON.stringify(user))
+
                 axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`
-                navigate('/intern/dashboard')
+
+                // Redirection selon le rôle
+                if (role === 'intern') {
+                    navigate('/intern/dashboard')
+                } else if (role === 'supervisor' || role === 'instructor') {
+                    navigate('/supervisor/dashboard')
+                } else if (role === 'admin' || role === 'administrator') {
+                    navigate('/admin/dashboard')
+                } else {
+                    navigate('/') // ou une page "Accès refusé"
+                }
+
             } else {
                 setError("Identifiant ou mot de passe incorrect")
             }
@@ -55,21 +69,17 @@ export default function useAuth() {
         }
     }
 
-    //Récupération des détails de l'utilisateur
     const fetchUserDetails = async () => {
         try {
             const token = localStorage.getItem('access_token')
-            if (!token) {
-                throw new Error("Aucun token trouvé")
-            }
-            const response = await axios.get(
-                "http://127.0.0.1:8000/api/user/",
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+            if (!token) throw new Error("Aucun token trouvé")
+
+            const response = await axios.get("http://127.0.0.1:8000/api/user/", {
+                headers: {
+                    Authorization: `Bearer ${token}`
                 }
-            )
+            })
+
             return response.data
         } catch (err) {
             console.error("Erreur lors de la récupération des détails de l'utilisateur", err)
@@ -78,7 +88,6 @@ export default function useAuth() {
         }
     }
 
-    //Déconnexion
     const logout = () => {
         localStorage.removeItem('access_token')
         localStorage.removeItem('refresh_token')
@@ -87,17 +96,13 @@ export default function useAuth() {
         navigate('/login')
     }
 
-    //Rafraîchissement des tokens
     const refreshToken = async () => {
         try {
             const refresh = localStorage.getItem('refresh_token')
-            if (!refresh) {
-                throw new Error("Aucun refresh token trouvé")
-            }
-            const response = await axios.post(
-                "http://127.0.0.1:8000/api/token/refresh/",
-                { refresh }
-            )
+            if (!refresh) throw new Error("Aucun refresh token trouvé")
+
+            const response = await axios.post("http://127.0.0.1:8000/api/token/refresh/", { refresh })
+
             localStorage.setItem('access_token', response.data.access)
             axios.defaults.headers.common['Authorization'] = `Bearer ${response.data.access}`
             return response.data.access
