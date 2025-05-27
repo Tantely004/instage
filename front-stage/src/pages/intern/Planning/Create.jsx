@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { motion } from "framer-motion"
 import { InputText } from "primereact/inputtext"
 import { Calendar } from "primereact/calendar"
@@ -9,17 +9,26 @@ import { Button } from 'primereact/button'
 import { Editor } from 'primereact/editor'
 import { Dropdown } from 'primereact/dropdown'
 import { FileUpload } from 'primereact/fileupload'
+import { Dialog } from 'primereact/dialog'
+import { Toast } from 'primereact/toast'
 import { useNavigate } from "react-router-dom"
 
 const CreatePlanning = () => {
-    const [ selectedSeverity, setSelectedSeverity ] = useState(null)
-    const [ selectedStatus, setSelectedStatus ] = useState(null)
+    const [submitted, setSubmitted] = useState(false)
+    const [selectedSeverity, setSelectedSeverity] = useState(null)
+    const [selectedStatus, setSelectedStatus] = useState(null)
+    const [tasks, setTasks] = useState([
+        { id: 1, filled: true, title: "" },
+        { id: 2, filled: true, title: "" },
+    ])
+    const [files, setFiles] = useState([])
+    const toast = useRef(null)
     const navigate = useNavigate()
 
     const severities = [
         { name: 'Urgent', value: 'urgent' },
-        { name: 'Secondaire', code: 'secondary' },
-        { name: 'Optionnel', code: 'optional' },
+        { name: 'Secondaire', value: 'secondary' },
+        { name: 'Optionnel', value: 'optional' },
     ]
 
     const taskStatuses = [
@@ -29,12 +38,6 @@ const CreatePlanning = () => {
         { name: 'Annulé', value: 'cancelled' },
     ]
 
-    const [tasks, setTasks] = useState([
-        { id: 1, filled: true },
-        { id: 2, filled: false },
-        { id: 3, filled: false }
-    ])
-
     const handleAddTask = () => {
         setTasks(prevTasks => {
             const index = prevTasks.findIndex(task => !task.filled)
@@ -42,45 +45,68 @@ const CreatePlanning = () => {
                 const updatedTasks = [...prevTasks]
                 updatedTasks[index].filled = true
                 return updatedTasks
+            } else {
+                toast.current.show({ 
+                    severity: 'warn', 
+                    summary: 'Limite atteinte', 
+                    detail: 'Toutes les tâches disponibles sont remplies.', 
+                    life: 3000 
+                })
             }
             return prevTasks
+        })
+    }
+
+    const handleTaskTitleChange = (taskId, value) => {
+        setTasks(prevTasks => 
+            prevTasks.map(task => 
+                task.id === taskId ? { ...task, title: value } : task
+            )
+        )
+    }
+
+    const handleSavePlanning = () => {
+        const hasEmptyTitles = tasks.some(task => task.filled && !task.title.trim())
+        if (hasEmptyTitles) {
+            toast.current.show({ 
+                severity: 'error', 
+                summary: 'Erreur', 
+                detail: 'Veuillez remplir tous les titres des tâches.', 
+                life: 3000 
+            })
+            return
+        }
+        toast.current.show({ 
+            severity: 'success', 
+            summary: 'Enregistré', 
+            detail: 'Le chronogramme a été enregistré avec succès.', 
+            life: 3000 
         })
     }
 
     const items = [
         { 
             label: 'Planning',
-            command : () => {
-                navigate('/intern/planning')
-            } 
+            command: () => navigate('/intern/planning')
         },
         { 
             label: 'Nouveau',
-            command : () => {
-                navigate('/intern/planning/create')
-            }
+            command: () => navigate('/intern/planning/create')
         }, 
     ]
     const home = { 
-        icon: 'pi pi-home',
-        url: 'https://primereact.org' 
-    }
-
-    const [files, setFiles] = useState([])
-
-    const pageVariants = {
-        initial: { opacity: 0, y: -10 },
-        in: { opacity: 1, y: 0 },
-        out: { opacity: 0, y: -5 },
-    }
-
-    const pageTransition = {
-        duration: 0.5,
+        icon: 'pi pi-home', 
     }
 
     const handleFileUpload = (event) => {
         const selectedFiles = Array.from(event.target.files || event.dataTransfer.files)
         setFiles(prevFiles => [...prevFiles, ...selectedFiles])
+        toast.current.show({ 
+            severity: 'info', 
+            summary: 'Fichier chargé', 
+            detail: 'Les fichiers ont été ajoutés avec succès.', 
+            life: 3000 
+        })
     }
 
     const handleDragOver = (event) => {
@@ -92,6 +118,16 @@ const CreatePlanning = () => {
         handleFileUpload(event)
     }
 
+    const pageVariants = {
+        initial: { opacity: 0, y: -10 },
+        in: { opacity: 1, y: 0 },
+        out: { opacity: 0, y: -5 },
+    }
+
+    const pageTransition = {
+        duration: 0.5,
+    }
+
     return (
         <motion.div
             initial="initial"
@@ -101,6 +137,7 @@ const CreatePlanning = () => {
             transition={pageTransition}
             className="px-16 mb-16"
         >
+            <Toast ref={toast} />
             <div>
                 <BreadCrumb 
                     model={items} 
@@ -112,7 +149,7 @@ const CreatePlanning = () => {
                 />
             </div>
 
-            <form>
+            <form onSubmit={(e) => e.preventDefault()}>
                 <section className="grid grid-cols-3 gap-16 mt-10">
                     <div className="col-span-2">
                         <h1 className="text-gray-800 text-3xl font-bold">
@@ -231,6 +268,14 @@ const CreatePlanning = () => {
                                 icon="pi pi-plus"
                                 label="Ajouter"
                                 size="small"
+                                onClick={handleAddTask}
+                            />
+                            <Button
+                                icon="pi pi-save"
+                                label="Enregistrer"
+                                size="small"
+                                className="!bg-gray-700 hover:!bg-gray-800 !border-none text-white"
+                                onClick={handleSavePlanning}
                             />
                             <i 
                                 className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400"
@@ -239,14 +284,19 @@ const CreatePlanning = () => {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-3 gap-8 mt-4">
+                    <div className="grid grid-cols-2 gap-8 mt-4">
                         {tasks.map((task, index) => (
-                            <div key={task.id} className="shadow rounded-lg p-6">
+                            <div key={task.id} className="shadow rounded-lg p-6 relative">
                                 {task.filled ? (
                                     <div>
                                         <div className="flex flex-col space-y-3">
                                             <label><i className="pi pi-file text-indigo-400 mr-3"/>Intitulé</label>
-                                            <InputText size="small" className="w-full" />
+                                            <InputText 
+                                                size="small" 
+                                                className="w-full" 
+                                                value={task.title}
+                                                onChange={(e) => handleTaskTitleChange(task.id, e.target.value)}
+                                            />
                                         </div>
                                         <div className="flex flex-col space-y-3 mt-4">
                                             <label><i className="pi pi-align-left text-indigo-400 mr-3"/>Détail</label>
@@ -262,32 +312,121 @@ const CreatePlanning = () => {
                                                 <Calendar size="small" className="w-full" />
                                             </div>
                                         </div>
-                                        <div className="flex flex-col space-y-3 mt-4">
-                                            <label><i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>Priorité</label>
-                                            <Dropdown value={selectedSeverity} onChange={(e) => setSelectedSeverity(e.value)} options={severities} optionLabel="name" optionValue="value" placeholder="Sélectionner" className="w-full" />
+
+                                        <div className="grid grid-cols-2 gap-6 mt-4">
+                                            <div className="flex flex-col space-y-3">
+                                                <label><i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>Priorité</label>
+                                                <Dropdown 
+                                                    value={selectedSeverity} 
+                                                    onChange={(e) => setSelectedSeverity(e.value)} 
+                                                    options={severities} 
+                                                    optionLabel="name" 
+                                                    optionValue="value" 
+                                                    placeholder="Sélectionner" 
+                                                    className="w-full" 
+                                                />
+                                            </div>
+                                            <div className="flex flex-col space-y-3">
+                                                <label><i className="pi pi-hourglass text-indigo-400 mr-3"/>État de la tâche</label>
+                                                <Dropdown 
+                                                    value={selectedStatus} 
+                                                    onChange={(e) => setSelectedStatus(e.value)} 
+                                                    options={taskStatuses} 
+                                                    optionLabel="name" 
+                                                    optionValue="value" 
+                                                    placeholder="Sélectionner" 
+                                                    className="w-full" 
+                                                />
+                                            </div>
                                         </div>
-                                        <div className="flex flex-col space-y-3 mt-4">
-                                            <label><i className="pi pi-hourglass text-indigo-400 mr-3"/>État de la tâche</label>
-                                            <Dropdown value={selectedStatus} onChange={(e) => setSelectedStatus(e.value)} options={taskStatuses} optionLabel="name" optionValue="value" placeholder="Sélectionner" className="w-full" />
-                                        </div>
+
                                         <div className="flex flex-col space-y-3 mt-4">
                                             <label><i className="pi pi-link text-indigo-400 mr-3"/>Pièces jointes</label>
-                                            <FileUpload mode="basic" name="demo[]" maxFileSize={1000000} chooseLabel="Choisir un fichier" />
+                                            <FileUpload 
+                                                mode="basic" 
+                                                name="demo[]" 
+                                                maxFileSize={1000000} 
+                                                chooseLabel="Choisir un fichier" 
+                                            />
                                         </div>
                                     </div>
                                 ) : (
                                     <div className="h-full flex flex-col justify-center items-center text-gray-400">
-                                       <p>
-                                            Tâche vide
-                                       </p>
-                                       <p className="text-center mt-4 text-sm">
-                                        Veuillez cliquer sur le bouton <strong>"Ajouter"</strong> pour remplir cette tâche.
-                                       </p>
+                                        <p>Tâche vide</p>
+                                        <p className="text-center mt-4 text-sm">
+                                            Veuillez cliquer sur le bouton <strong>"Ajouter"</strong> pour remplir cette tâche.
+                                        </p>
                                     </div>
                                 )}
                             </div>
                         ))}
                     </div>
+                </section>
+
+                <section className="mt-16 flex justify-end items-center gap-x-8">
+                    <Button
+                        label="Annuler"
+                        className="!bg-gray-200 hover:!bg-gray-300 !border-none !text-gray-700 mr-4"
+                    />
+                    <Button
+                        label="Valider"
+                        onClick={() => setSubmitted(true)}
+                    />
+
+                    <Dialog
+                        header="Votre chronogramme"
+                        modal 
+                        visible={submitted}
+                        className="w-[36rem] !font-poppins"
+                        onHide={() => {if (!submitted) return; setSubmitted(false); }}
+                    >
+                        <p>
+                        Vérifier votre chronogramme avant de le soumettre. Assurez-vous que toutes les informations sont correctes et complètes.
+                        </p>
+
+                        <div className="grid grid-cols-[25%_75%] gap-6 mt-8">
+                            <h5 className="text-indigo-500 font-semibold">
+                                Titre
+                            </h5>
+                            <p>
+                                Nouveau chronogramme 1
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
+                            <h5 className="text-indigo-500 font-semibold">
+                               Date de fin
+                            </h5>
+                            <p>
+                                09/06/2025
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
+                            <h5 className="text-indigo-500 font-semibold">
+                               Date de début
+                            </h5>
+                            <p>
+                                09/06/2025
+                            </p>
+                        </div>
+                        <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
+                            <h5 className="text-indigo-500 font-semibold">
+                               Tâches
+                            </h5>
+                            <p>
+                                12
+                            </p>
+                        </div>
+
+                        <div className="mt-8 text-sm">
+                            <i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>
+                            Votre encadreur recevra ce chronogramme et pourra le modifier si nécessaire. Soyez sûr que toutes les informations sont correctes avant de le soumettre.
+                        </div>
+
+                        <Button
+                            label="Soumettre"
+                            className="!mt-8 !w-full !flex !justify-center !items-center !bg-indigo-500 hover:!bg-indigo-600 !border-none text-white"
+                        />
+                    </Dialog>
                 </section>
             </form>
         </motion.div>
