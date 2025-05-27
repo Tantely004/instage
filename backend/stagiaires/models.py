@@ -237,7 +237,6 @@ class AssignmentTaskPriorityChoices(models.TextChoices):
 class AssignmentTask(models.Model):
     id = models.AutoField(primary_key=True)
     intern = models.ForeignKey(Intern, on_delete=models.CASCADE)
-    task = models.ForeignKey(Task, on_delete=models.CASCADE)
     status = models.CharField(
         max_length=20,
         choices=AssignmentTaskStatusChoices.choices,
@@ -252,6 +251,24 @@ class AssignmentTask(models.Model):
 
     def __str__(self):
         return f"AssignmentTask: {self.task.title} for {self.intern.user.identifier}"
+    
+# ===================== #
+#       PROJECT         #
+# ===================== #
+class Project(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=100)
+    internship = models.ForeignKey(Internship, on_delete=models.CASCADE)
+
+# ===================== #
+#       PLANNING        #
+# ===================== #
+class Planning(models.Model):
+    id = models.AutoField(primary_key=True)
+    title = models.CharField(max_length=100)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE)
+    start_date = models.DateField()
+    end_date = models.DateField()
 
 # ===================== #
 #   WORK HOURS LOG : Un modèle pour suivre les heures de travail des stagiaires,#

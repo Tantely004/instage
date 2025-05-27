@@ -18,14 +18,18 @@ import DashboardSupervisor from './pages/supervisor/Dashboard'
 
 import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
+import PlanningIndex from './pages/intern/Planning/index'
+import MyInternship from './pages/intern/Me'
+import CreatePlanning from './pages/intern/Planning/Create'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
 
 function App() {
-  const [loading, setLoading] = useState(false)
-  const [isDarkMode, setIsDarkMode] = useState(() => {
-    return localStorage.getItem('theme') === 'dark'
+      // eslint-disable-next-line no-unused-vars
+      const [loading, setLoading] = useState(false)
+      const [isDarkMode, setIsDarkMode] = useState(() => {
+      return localStorage.getItem('theme') === 'dark'
   })
   const location = useLocation()
 
@@ -76,36 +80,28 @@ function App() {
     <>
       <AnimatePresence mode="wait">
         <div>
-          <Routes key={location.pathname} location={location}>
+            <Routes key={location.pathname} location={location}>
+                <Route path="/" element={<Home />} />
+                <Route path="/login" element={<Login />} />  
 
-            {/* Routes publiques */}
-            <Route path="/" element={<Home />} />
-            <Route path="/login" element={<Login />} />
+                <Route path='/intern' element={<LayoutIntern />}>
+                  <Route index path="dashboard" element={<Dashboard />} />
+                  <Route index path="planning" element={<PlanningIndex />} />
+                  <Route index path="planning/create" element={<CreatePlanning />} />
+                  <Route index path="me" element={<MyInternship />} />
+                </Route>
 
-            {/* Routes Intern sécurisées */}
-            <Route element={<RequireAuth allowedRoles={['intern']} />}>
-              <Route path="/intern" element={<LayoutIntern />}>
-                <Route index path="dashboard" element={<Dashboard />} />
-              </Route>
-            </Route>
+                <Route 
+                    path="/supervisor" 
+                    element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
+                >
+                    <Route index path="dashboard" element={<DashboardSupervisor />} />
+                </Route>
 
-            {/* Routes Supervisor & Instructor sécurisées */}
-            <Route element={<RequireAuth allowedRoles={['supervisor', 'instructor']} />}>
-              <Route path="/supervisor" element={
-                <LayoutSupervisor isDarkMode={isDarkMode} setIsDarkMode={setIsDarkMode} />
-              }>
-                <Route index path="dashboard" element={<DashboardSupervisor />} />
-              </Route>
-            </Route>
-
-            {/* Routes Admin sécurisées */}
-            <Route element={<RequireAuth allowedRoles={['admin', 'administrator']} />}>
-              <Route path="/admin" element={<LayoutAdmin />}>
-                <Route index path="dashboard" element={<DashboardAdmin />} />
-              </Route>
-            </Route>
-
-          </Routes>
+                <Route path="/admin" element={<LayoutAdmin />}>
+                    <Route index path="dashboard" element={<DashboardAdmin />} />
+                </Route>
+            </Routes>
         </div>
       </AnimatePresence>
     </>
