@@ -1,9 +1,11 @@
-import { useMemo } from 'react'
+import { useMemo, useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { Menubar } from 'primereact/menubar'
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
 import { InputText } from "primereact/inputtext"
+import { Tooltip } from 'primereact/tooltip'
+import { TieredMenu } from 'primereact/tieredmenu'
 
 import Logo from '../Logo'
 import imgProfile from '../../assets/images/img_profile_intern.jpg'
@@ -11,6 +13,22 @@ import imgProfile from '../../assets/images/img_profile_intern.jpg'
 const Toolbar = () => {
     const location = useLocation()
     const navigate = useNavigate()
+
+    const profileMenu = useRef(null)
+    const profileItems = [
+        {
+            label: 'Mon profil',
+            icon: 'pi pi-user',
+        },
+        {
+            label: 'Paramètres',
+            icon: 'pi pi-cog',
+        },
+        {
+            label: 'Déconnexion',
+            icon: 'pi pi-sign-out',
+        }
+    ]
 
     const menuItems = useMemo(() => [
         {
@@ -20,7 +38,7 @@ const Toolbar = () => {
             className: location.pathname === '/intern/dashboard' ? 'bg-indigo-200 hover:bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
         },
         {
-            label: 'Calendrier',
+            label: 'Planning',
             icon: 'pi pi-calendar',
             command: () => navigate('/intern/planning'),
             className: location.pathname === '/intern/planning' ? 'bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
@@ -77,10 +95,31 @@ const Toolbar = () => {
 
                 <img 
                     src={imgProfile} 
-                    alt="Profile user" 
-                    className='w-12 h-12 object-center rounded-full border-1 border-gray-200 cursor-pointer'
-                    title='Votre profil'
+                    className='custom-tooltip-img w-12 h-12 object-center rounded-full border-1 border-gray-200 cursor-pointer'
+                    onClick={(e) => profileMenu.current.toggle(e)}
                 />
+
+                <TieredMenu 
+                    model={profileItems} 
+                    popup 
+                    ref={profileMenu}
+                    className='!font-poppins'
+                    pt={{
+                        icon: '!text-indigo-300',
+                    }}
+                />
+
+                <Tooltip 
+                    target=".custom-tooltip-img"
+                    position='bottom'
+                >
+                    <h6 className='text-sm'>
+                        Votre profil
+                    </h6>
+                    <p className='font-bold'>
+                        ANDRIANARIDERA Tantely Ny Aina
+                    </p>
+                 </Tooltip>
             </div>
         </header>
     )

@@ -10,12 +10,16 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@fullcalendar/core": "^6.1.17",
+    "@fullcalendar/daygrid": "^6.1.17",
+    "@fullcalendar/react": "^6.1.17",
     "@tailwindcss/vite": "^4.1.6",
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
     "framer-motion": "^12.10.5",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.5",
+    "quill": "^2.0.3",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-router-dom": "^7.6.0",

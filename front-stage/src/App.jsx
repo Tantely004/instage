@@ -21,7 +21,6 @@ import DashboardAdmin from './pages/admin/Dashboard'
 import PlanningIndex from './pages/intern/Planning/index'
 import MyInternship from './pages/intern/Me'
 import CreatePlanning from './pages/intern/Planning/Create'
-
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
 
