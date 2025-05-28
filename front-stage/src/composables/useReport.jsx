@@ -1,8 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 
-// Configurer l'intercepteur Axios (déjà défini dans useAuth.jsx, donc pas besoin de le redéfinir ici)
-
 export default function useReport() {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
@@ -15,9 +13,21 @@ export default function useReport() {
 
         try {
             const token = localStorage.getItem('access_token');
+            const user = JSON.parse(localStorage.getItem('user'));
             if (!token) throw new Error("Aucun token trouvé");
+            if (!user) throw new Error("Utilisateur non connecté");
 
-            const response = await axios.get("http://127.0.0.1:8000/api/dashboard/", {
+            // Déterminer l'URL en fonction du rôle
+            let url;
+            if (user.role === 'intern') {
+                url = "http://127.0.0.1:8000/api/dashboard/intern/";
+            } else if (user.role === 'instructor') {
+                url = "http://127.0.0.1:8000/api/dashboard/supervisor/";
+            } else {
+                throw new Error("Rôle non pris en charge");
+            }
+
+            const response = await axios.get(url, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                 },

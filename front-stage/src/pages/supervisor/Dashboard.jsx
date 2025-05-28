@@ -3,7 +3,7 @@ import { Chart } from 'primereact/chart'
 import { Avatar } from 'primereact/avatar'
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
-import { useOutletContext } from "react-router-dom"
+// import { useOutletContext } from "react-router-dom"
 
 import intern1 from '../../assets/images/fake/intern1.png'
 import intern2 from '../../assets/images/fake/intern2.png'
@@ -49,12 +49,13 @@ const DashboardSupervisor = ({isDarkMode}) => {
             reason: 'Briefing projet',
         },
     ]
-
+/*
     const getChartColors = (isDark) => {
         return {
             textColor: isDark ? '#f3f4f6' : '#1f2937',
         }
     }
+*/
 
     useEffect(() => {
         const documentStyle = getComputedStyle(document.documentElement)
@@ -112,6 +113,7 @@ const DashboardSupervisor = ({isDarkMode}) => {
 
         setChartData(data)
         setChartOptions(options)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     return (
