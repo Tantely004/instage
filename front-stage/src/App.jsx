@@ -24,6 +24,7 @@ import CreatePlanning from './pages/intern/Planning/Create'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
+import ProfileIntern from './pages/intern/Profile'
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -89,6 +90,7 @@ function App() {
                   <Route index path="planning" element={<PlanningIndex />} />
                   <Route index path="planning/create" element={<CreatePlanning />} />
                   <Route index path="me" element={<MyInternship />} />
+                  <Route index path="profile" element={<ProfileIntern />} />
                 </Route>
 
                 <Route 
