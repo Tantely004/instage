@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from "primereact/button";
 import { Chart } from 'primereact/chart';
 import { Dropdown } from 'primereact/dropdown';
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 
 import student from "../../assets/images/student.png";
@@ -29,6 +30,7 @@ const DashboardIntern = () => {
     // Récupérer les données au chargement du composant
     useEffect(() => {
         fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Mettre à jour le graphique lorsque les données ou la période changent
@@ -102,7 +104,7 @@ const DashboardIntern = () => {
     }, [dashboardData, selectedPeriod]);
 
     if (loading) {
-        return <div>Chargement...</div>;
+        return <div></div>;
     }
 
     if (error) {
@@ -110,10 +112,19 @@ const DashboardIntern = () => {
     }
 
     if (!dashboardData) {
-        return <div>Aucune donnée disponible</div>;
+        return <div></div>;
     }
 
     const user = JSON.parse(localStorage.getItem('user')); // Récupérer les infos de l'utilisateur connecté
+    const today = new Date(); // Date et heure actuelles (10:58 AM EAT, 28 mai 2025)
+
+    // Filtrer les supervisions en prenant en compte la date et l'heure
+    const upcomingSupervisions = dashboardData.supervisions.filter((supervision) => {
+        const interview = supervision.report.interview;
+        const interviewDateTime = new Date(`${interview.date}T${interview.time}`); // Combiner date et heure
+        console.log("Interview DateTime:", interviewDateTime, "Today:", today, "Is Upcoming:", interviewDateTime >= today);
+        return interviewDateTime >= today;
+    });
 
     return (
         <motion.div
@@ -214,35 +225,41 @@ const DashboardIntern = () => {
                     </h4>
 
                     <div className="mt-6 space-y-6">
-                        {dashboardData.supervisions.map((supervision) => {
-                            const report = supervision.report;
-                            const interview = report.interview;
-                            return (
-                                <div
-                                    key={report.id}
-                                    className="bg-white cursor-pointer border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
-                                >
-                                    <div className="flex justify-between items-center mb-2">
-                                        <p className="flex space-x-3 items-center text-sm font-medium text-gray-700">
-                                            <span>📅</span>
-                                            <div className="flex flex-col">
-                                                <span>{interview.date}</span>
-                                                <span>{interview.time}</span>
+                        {upcomingSupervisions.length > 0 ? (
+                            upcomingSupervisions.map((supervision) => {
+                                const report = supervision.report;
+                                const interview = report.interview;
+                                return (
+                                    <div
+                                        key={report.id}
+                                        className="bg-white cursor-pointer border border-gray-200 rounded-lg p-4 shadow-sm hover:shadow-md transition"
+                                    >
+                                        <div className="flex justify-between items-center mb-2">
+                                            <div className="flex space-x-3 items-center text-sm font-medium text-gray-700">
+                                                <span>📅</span>
+                                                <div className="flex flex-col">
+                                                    <span>{interview.date}</span>
+                                                    <span>{interview.time}</span>
+                                                </div>
                                             </div>
-                                        </p>
-                                        <span className="text-xs bg-indigo-100 text-indigo-600 font-semibold px-2 py-0.5 rounded-full">
-                                            Porte {interview.room}
-                                        </span>
-                                    </div>
+                                            <span className="text-xs bg-indigo-100 text-indigo-600 font-semibold px-2 py-0.5 rounded-full">
+                                                Porte {interview.room}
+                                            </span>
+                                        </div>
 
-                                    <ul className="mt-4 list-disc list-inside text-sm text-gray-600">
-                                        {interview.subjects.map((subject, index) => (
-                                            <li key={index} className="mb-2">{subject}</li>
-                                        ))}
-                                    </ul>
-                                </div>
-                            );
-                        })}
+                                        <ul className="mt-4 list-disc list-inside text-sm text-gray-600">
+                                            {interview.subjects.map((subject, index) => (
+                                                <li key={index} className="mb-2">{subject}</li>
+                                            ))}
+                                        </ul>
+                                    </div>
+                                );
+                            })
+                        ) : (
+                            <p className="text-gray-500 text-sm">
+                                Aucune supervision à venir.
+                            </p>
+                        )}
                     </div>
                 </section>
             </div>

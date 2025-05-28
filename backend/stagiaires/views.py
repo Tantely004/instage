@@ -8,7 +8,7 @@ from rest_framework.permissions import IsAuthenticated
 from datetime import datetime, timedelta
 from django.utils import timezone
 
-class CustomTokenObtainPairView(TokenObtainPairView):
+class LoginAPIView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
@@ -95,7 +95,7 @@ class UserDetailAPIView(APIView):
             "detail_role": detail_role
         }, status=status.HTTP_200_OK)
 
-class DashboardAPIView(APIView):
+class DashboardInternAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -208,3 +208,4 @@ class DashboardAPIView(APIView):
             "statistics": statistics,
             "supervisions": supervisions
         }, status=status.HTTP_200_OK)
+    
