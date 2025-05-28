@@ -209,3 +209,68 @@ class DashboardInternAPIView(APIView):
             "supervisions": supervisions
         }, status=status.HTTP_200_OK)
     
+class DashboardInstructorAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        user = request.user
+        today = timezone.now().date()
+
+        # Vérifier le rôle de l'utilisateur
+        if user.role != 'instructor':
+            return Response(
+                {"message": "Accès réservé aux encadreurs."},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
+        try:
+            instructor = Instructor.objects.get(user=user)
+        except Instructor.DoesNotExist:
+            return Response(
+                {"message": "Profil encadreur introuvable."},
+                status=status.HTTP_404_NOT_FOUND
+            )
+
+        # kpi
+        # interns: Nombre de stagiaires encadrés
+        internships = Internship.objects.filter(instructor=instructor)
+        interns_count = internships.values('intern').distinct().count()
+
+        # interview: Nombre d'entrevues prévues aujourd'hui
+        interviews_count = Interview.objects.filter(
+            internship__instructor=instructor,
+            date=today,
+            status='planned'
+        ).count()
+
+        # toDoCompleted: Nombre total de tâches complétées par tous les stagiaires encadrés
+        to_do_completed = AssignmentTask.objects.filter(
+            intern__in=internships.values('intern'),
+            status='completed'
+        ).count()
+
+        # receivedReports: Nombre de rapports soumis aujourd'hui
+        received_reports = Report.objects.filter(
+            interview__internship__instructor=instructor,
+            status='submitted',
+            submitted_date__date=today
+        ).count()
+
+        kpi = {
+            "interns": interns_count,
+            "interview": interviews_count,
+            "toDoCompleted": to_do_completed,
+            "receivedReports": received_reports
+        }
+
+        # supervisions: Liste des encadrements (date >= aujourd'hui)
+        reports = Report.objects.filter(
+            interview__internship__instructor=instructor,
+            interview__date__gte=today
+        )
+        supervisions = [{"report": ReportSerializer(report).data} for report in reports]
+
+        return Response({
+            "kpi": kpi,
+            "supervisions": supervisions,
+        }, status=status.HTTP_200_OK)

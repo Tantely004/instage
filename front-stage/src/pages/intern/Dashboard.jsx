@@ -122,7 +122,6 @@ const DashboardIntern = () => {
     const upcomingSupervisions = dashboardData.supervisions.filter((supervision) => {
         const interview = supervision.report.interview;
         const interviewDateTime = new Date(`${interview.date}T${interview.time}`); // Combiner date et heure
-        console.log("Interview DateTime:", interviewDateTime, "Today:", today, "Is Upcoming:", interviewDateTime >= today);
         return interviewDateTime >= today;
     });
 
