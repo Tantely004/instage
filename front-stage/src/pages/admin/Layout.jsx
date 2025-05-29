@@ -1,8 +1,10 @@
-import { useState } from "react"
+import { useState, useRef } from "react"
 import { Outlet } from "react-router-dom"
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
 import { InputText } from "primereact/inputtext"
+import { Tooltip } from 'primereact/tooltip'
+import { TieredMenu } from 'primereact/tieredmenu'
 
 import SidebarAdmin from "../../components/admin/Sidebar"
 
@@ -10,6 +12,22 @@ import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
 
 const LayoutAdmin = () => {
     const [collapsed, setCollapsed] = useState(false)
+
+    const profileMenu = useRef(null)
+    const profileItems = [
+        {
+            label: 'Mon profil',
+            icon: 'pi pi-user',
+        },
+        {
+            label: 'Paramètres',
+            icon: 'pi pi-cog',
+        },
+        {
+            label: 'Déconnexion',
+            icon: 'pi pi-sign-out',
+        }
+    ]
 
     return (
         <div className="flex">
@@ -33,8 +51,31 @@ const LayoutAdmin = () => {
                         <i className="pi pi-cog text-black/60"/>
                         <img 
                             src={imgSupervisor} 
-                            className="w-12 h-12 rounded-full"
+                            className="custom-tooltip-img w-12 h-12 rounded-full cursor-pointer"
+                            onClick={(e) => profileMenu.current.toggle(e)}
                         />
+
+                        <TieredMenu 
+                            model={profileItems} 
+                            popup 
+                            ref={profileMenu}
+                            className='!font-poppins'
+                            pt={{
+                                icon: '!text-indigo-300',
+                            }}
+                        />
+
+                        <Tooltip 
+                            target=".custom-tooltip-img"
+                            position='bottom'
+                        >
+                            <h6 className='text-sm'>
+                                Votre profil
+                            </h6>
+                            <p className='font-bold'>
+                                MANDIMBISOA Laza
+                            </p>
+                        </Tooltip>
                     </div>
                 </header>
 
