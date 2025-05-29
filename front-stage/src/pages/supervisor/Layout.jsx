@@ -1,5 +1,5 @@
 import { useState, useRef } from "react"
-import { Outlet } from "react-router-dom"
+import { Outlet, useNavigate } from "react-router-dom"
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
 import { InputText } from "primereact/inputtext"
@@ -11,6 +11,7 @@ import SidebarSupervisor from "../../components/supervisor/Sidebar"
 import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
 
 const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
+    const navigate = useNavigate()
     const [collapsed, setCollapsed] = useState(false)
 
     const profileMenu = useRef(null)
@@ -18,6 +19,9 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
         {
             label: 'Mon profil',
             icon: 'pi pi-user',
+            command : () => {
+                navigate('/supervisor/profile')
+            }
         },
         {
             label: 'Paramètres',

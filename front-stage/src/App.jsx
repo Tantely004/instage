@@ -15,6 +15,7 @@ import DashboardAdmin from './pages/admin/Dashboard'
 import PlanningIndex from './pages/intern/Planning/index'
 import MyInternship from './pages/intern/Me'
 import CreatePlanning from './pages/intern/Planning/Create'
+import ProfileSupervisor from './pages/supervisor/Profile'
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -75,6 +76,7 @@ function App() {
                     element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
                 >
                     <Route index path="dashboard" element={<DashboardSupervisor />} />
+                    <Route index path="profile" element={<ProfileSupervisor />} />
                 </Route>
 
                 <Route path="/admin" element={<LayoutAdmin />}>
