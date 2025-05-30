@@ -14,6 +14,7 @@ import Dashboard from './pages/intern/Dashboard'
 import DashboardSupervisor from './pages/supervisor/Dashboard'
 import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
+import Users from './pages/admin/users'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -53,6 +54,7 @@ function App() {
               {/** ADMIN */}
               <Route path="/admin" element={<LayoutAdmin />}>
                 <Route index path="dashboard" element={<DashboardAdmin />} />
+                <Route index path="users" element={<Users />} />
               </Route>
             </Routes>
         </div>
