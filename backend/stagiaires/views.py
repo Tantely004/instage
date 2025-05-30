@@ -7,6 +7,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from rest_framework.permissions import IsAuthenticated
 from datetime import datetime, timedelta
 from django.utils import timezone
+from django.contrib.auth import get_user_model
 
 class LoginAPIView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
@@ -274,3 +275,65 @@ class DashboardInstructorAPIView(APIView):
             "kpi": kpi,
             "supervisions": supervisions,
         }, status=status.HTTP_200_OK)
+
+class ProfileInternAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Récupérer l'utilisateur connecté
+            user = request.user
+            if user.role != 'intern':
+                return Response(
+                    {"message": "Accès réservé aux stagiaires"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Récupérer le profil Intern associé
+            intern = Intern.objects.get(user=user)
+            intern_data = InternSerializer(intern).data
+
+            # Récupérer les données de l'utilisateur
+            user_data = UserSerializer(user).data
+
+            # Récupérer l'internship associé (s'il existe)
+            try:
+                internship = Internship.objects.get(intern=intern)
+                internship_data = InternshipSerializer(internship).data
+            except Internship.DoesNotExist:
+                internship_data = None
+
+            # Combiner les données
+            profile_data = {
+                "user": user_data,
+                "intern": intern_data,
+                "internship": internship_data,
+            }
+
+            return Response(profile_data, status=status.HTTP_200_OK)
+        except Intern.DoesNotExist:
+            return Response(
+                {"message": "Profil stagiaire non trouvé"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+        
+User = get_user_model()
+
+class ToolbarDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            user = request.user
+            user_data = UserSerializer(user).data
+            return Response(user_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

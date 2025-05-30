@@ -1,19 +1,20 @@
-import { useState, useRef } from "react"
-import { Outlet } from "react-router-dom"
-import { IconField } from "primereact/iconfield"
-import { InputIcon } from "primereact/inputicon"
-import { InputText } from "primereact/inputtext"
-import { Tooltip } from 'primereact/tooltip'
-import { TieredMenu } from 'primereact/tieredmenu'
+import { useState, useRef, useEffect } from "react";
+import { Outlet } from "react-router-dom";
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { Tooltip } from 'primereact/tooltip';
+import { TieredMenu } from 'primereact/tieredmenu';
+import useToolbar from "../../composables/useToolbar"; // Importer useToolbar
 
-import SidebarAdmin from "../../components/admin/Sidebar"
-
-import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
+import SidebarAdmin from "../../components/admin/Sidebar";
+import imgSupervisor from "../../assets/images/img_profile_supervisor.png";
 
 const LayoutAdmin = () => {
-    const [collapsed, setCollapsed] = useState(false)
+    const [collapsed, setCollapsed] = useState(false);
+    const { fetchUserData, userData, loading, error } = useToolbar(); // Utiliser le hook
 
-    const profileMenu = useRef(null)
+    const profileMenu = useRef(null);
     const profileItems = [
         {
             label: 'Mon profil',
@@ -26,8 +27,25 @@ const LayoutAdmin = () => {
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
-        }
-    ]
+        },
+    ];
+
+    // Récupérer les données de l'utilisateur au chargement du composant
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    if (loading) {
+        return <div>Chargement...</div>;
+    }
+
+    if (error) {
+        return <div className="text-red-600 text-center">{error}</div>;
+    }
+
+    // Utiliser une image par défaut si userData.image est null
+    const profileImage = userData?.image || imgSupervisor;
+    const fullName = userData ? `${userData.firstname} ${userData.name}` : "Utilisateur";
 
     return (
         <div className="flex">
@@ -50,7 +68,7 @@ const LayoutAdmin = () => {
                         <i className="pi pi-bell text-black/60"/>
                         <i className="pi pi-cog text-black/60"/>
                         <img 
-                            src={imgSupervisor} 
+                            src={profileImage} 
                             className="custom-tooltip-img w-12 h-12 rounded-full cursor-pointer"
                             onClick={(e) => profileMenu.current.toggle(e)}
                         />
@@ -73,7 +91,7 @@ const LayoutAdmin = () => {
                                 Votre profil
                             </h6>
                             <p className='font-bold'>
-                                MANDIMBISOA Laza
+                                {fullName}
                             </p>
                         </Tooltip>
                     </div>
@@ -84,7 +102,7 @@ const LayoutAdmin = () => {
                 </main>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default LayoutAdmin
+export default LayoutAdmin;

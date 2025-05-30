@@ -4,10 +4,12 @@ import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
 import { PanelMenu } from "primereact/panelmenu";
 import { Chip } from "primereact/chip";
-
+import useProfile from "../../composables/useProfile"; // Importer le hook useProfile
 import imgIntern from "../../assets/images/fake/intern2.png";
 
 const ProfileIntern = () => {
+    const { fetchProfileData, profileData, loading, error } = useProfile();
+
     const sessionItems = [
         {
             label: "Connexions",
@@ -34,6 +36,7 @@ const ProfileIntern = () => {
         duration: 0.5,
     };
 
+    // États initiaux vides, remplis par l'API
     const [personalInfo, setPersonalInfo] = useState({
         lastname: "",
         firstname: "",
@@ -45,7 +48,7 @@ const ProfileIntern = () => {
     });
 
     const [passwordUser, setPasswordUser] = useState({
-        current: "",
+        current: "******", // Masqué par défaut
         new: "",
         confirm: "",
     });
@@ -56,30 +59,43 @@ const ProfileIntern = () => {
         github: "",
     });
 
-    // Récupérer les données de l'utilisateur depuis localStorage au chargement
+    // Récupérer les données du profil au chargement
     useEffect(() => {
-        const storedUser = JSON.parse(localStorage.getItem("user"));
-        if (storedUser) {
-            setPersonalInfo({
-                lastname: storedUser.name || "",
-                firstname: storedUser.firstname || "",
-                email: storedUser.mail || "",
-                contact: storedUser.contact || "",
-                etablishment: storedUser.etablishment || "", // Peut nécessiter un ajustement selon le modèle
-                domain: storedUser.sector || "", // Ajustement possible selon le rôle
-                level: storedUser.level || "", // Ajustement possible selon le rôle
-            });
-            setPasswordUser((prev) => ({
-                ...prev,
-                current: "", // Pas récupéré depuis localStorage pour des raisons de sécurité
-            }));
-            setPersonalLink({
-                linkedin: "",
-                portfolio: "",
-                github: "",
-            });
-        }
+        fetchProfileData();
     }, []);
+
+    // Mettre à jour les états avec les données de l'API
+    useEffect(() => {
+        console.log("Profile Data:", profileData); // Débogage
+        if (profileData) {
+            const user = profileData.user;
+            const intern = profileData.intern;
+            setPersonalInfo({
+                lastname: user.name || "",
+                firstname: user.firstname || "",
+                email: user.mail || "",
+                contact: user.contact || "",
+                etablishment: intern.etablishment || "",
+                domain: intern.sector || "",
+                level: intern.level || "",
+            });
+            // Les liens externes ne sont pas dans l'API pour l'instant
+        }
+    }, [profileData]);
+
+    if (loading) {
+        return <div className="text-center py-10">Chargement...</div>;
+    }
+
+    if (error) {
+        return <div className="text-red-600 text-center py-10">{error}</div>;
+    }
+
+    if (!profileData) {
+        return <div className="text-center py-10">Aucune donnée disponible</div>;
+    }
+
+    const user = profileData.user;
 
     return (
         <motion.div
@@ -95,7 +111,8 @@ const ProfileIntern = () => {
                     Consultez ici votre profil et modifiez vos informations personnelles
                 </p>
                 <img
-                    src={imgIntern}
+                    src={user.image || imgIntern}
+                    alt="Profile"
                     className="w-40 h-40 rounded-full absolute -bottom-16 left-1/8 border-6 border-white"
                 />
                 <p className="absolute -bottom-8 left-80 text-gray-600 text-sm">
@@ -110,11 +127,11 @@ const ProfileIntern = () => {
                     </h2>
                     <p className="text-gray-600 mt-2">
                         <span className="mr-3">#</span>
-                        {storedUser?.identifier || "STA12345678"}
+                        {user.identifier}
                     </p>
                     <p className="text-gray-600">
                         <i className="pi pi-graduation-cap mt-2 mr-3" />
-                        {personalInfo.etablishment ? `${personalInfo.etablishment} - Mahamasina` : "Université ESMIA - Mahamasina"}
+                        Université {personalInfo.etablishment} - Mahamasina
                     </p>
                 </div>
 
@@ -126,7 +143,7 @@ const ProfileIntern = () => {
                     <div className="text-end">
                         <span className="font-medium text-sm">CV : </span>
                         <Chip
-                            label="CV_Tantely_Ny_Aina"
+                            label={user.cv ? user.cv.split("/").pop() : "Aucun CV"}
                             icon="pi pi-file"
                             className="!ml-4 !text-xs !font-poppins"
                         />
@@ -153,22 +170,22 @@ const ProfileIntern = () => {
                             </label>
                             <InputText
                                 value={personalInfo.lastname}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, lastname: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, lastname: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">Prénoms</label>
                             <InputText
                                 value={personalInfo.firstname}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, firstname: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, firstname: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
@@ -176,55 +193,55 @@ const ProfileIntern = () => {
                             <InputText
                                 type="email"
                                 value={personalInfo.email}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, email: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, email: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">Contact</label>
                             <InputText
                                 value={personalInfo.contact}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, contact: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, contact: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">Établissement d'origine</label>
                             <InputText
                                 value={personalInfo.etablishment}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, etablishment: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, etablishment: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">Domaine</label>
                             <InputText
                                 value={personalInfo.domain}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, domain: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, domain: e.target.value }))
-                                }
                             />
                         </div>
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">Niveau</label>
                             <InputText
                                 value={personalInfo.level}
+                                onChange={(e) =>
+                                    setPersonalInfo({ ...personalInfo, level: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalInfo((prev) => ({ ...prev, level: e.target.value }))
-                                }
                             />
                         </div>
                     </div>
@@ -238,23 +255,23 @@ const ProfileIntern = () => {
                     <div className="mt-4 flex flex-col space-y-5 bg-gray-50 shadow-lg rounded-lg p-6">
                         <div className="flex justify-between items-center">
                             <p className="text-sm">
-                                Votre mot de passe est fourni par l'administrateur. Vous pouvez personnaliser votre mot de passe à partir de cet alternative
+                                Votre mot de passe est fourni par l'administrateur. Vous pouvez
+                                personnaliser votre mot de passe à partir de cet alternative
                             </p>
                             <i className="pi pi-info-circle text-xs cursor-pointer hover:text-indigo-400" />
                         </div>
 
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">
-                                <i className="pi pi-lock text-indigo-400 mr-2" /> Votre mot de passe actuel
+                                <i className="pi pi-lock text-indigo-400 mr-2" /> Votre mot de
+                                passe actuel
                             </label>
                             <Password
                                 value={passwordUser.current}
-                                pt={{
-                                    input: "!font-poppins !h-11",
-                                }}
                                 onChange={(e) =>
-                                    setPasswordUser((prev) => ({ ...prev, current: e.target.value }))
+                                    setPasswordUser({ ...passwordUser, current: e.target.value })
                                 }
+                                pt={{ input: "!font-poppins !h-11" }}
                             />
                             <p className="mt-6 font-medium text-indigo-500 text-sm">
                                 <i className="pi pi-shield mr-3" />
@@ -281,15 +298,16 @@ const ProfileIntern = () => {
                     <div className="mt-4 flex flex-col space-y-5 bg-gray-50 shadow-lg rounded-lg p-6">
                         <div className="flex flex-col space-y-2">
                             <label className="text-gray-500">
-                                <i className="pi pi-linkedin text-indigo-500 mr-3" /> Profil Linkedin
+                                <i className="pi pi-linkedin text-indigo-500 mr-3" /> Profil
+                                Linkedin
                             </label>
                             <InputText
                                 value={personalLink.linkedin}
+                                onChange={(e) =>
+                                    setPersonalLink({ ...personalLink, linkedin: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalLink((prev) => ({ ...prev, linkedin: e.target.value }))
-                                }
                             />
                         </div>
 
@@ -299,11 +317,11 @@ const ProfileIntern = () => {
                             </label>
                             <InputText
                                 value={personalLink.portfolio}
+                                onChange={(e) =>
+                                    setPersonalLink({ ...personalLink, portfolio: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalLink((prev) => ({ ...prev, portfolio: e.target.value }))
-                                }
                             />
                         </div>
 
@@ -313,11 +331,11 @@ const ProfileIntern = () => {
                             </label>
                             <InputText
                                 value={personalLink.github}
+                                onChange={(e) =>
+                                    setPersonalLink({ ...personalLink, github: e.target.value })
+                                }
                                 size="small"
                                 className="!font-poppins"
-                                onChange={(e) =>
-                                    setPersonalLink((prev) => ({ ...prev, github: e.target.value }))
-                                }
                             />
                         </div>
                     </div>
