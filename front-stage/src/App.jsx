@@ -22,10 +22,12 @@ import PlanningIndex from './pages/intern/Planning/index'
 import MyInternship from './pages/intern/Me'
 import CreatePlanning from './pages/intern/Planning/Create'
 import ProfileSupervisor from './pages/supervisor/Profile'
+import ProfileIntern from './pages/intern/Profile'
+import Users from './pages/admin/users'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
-import ProfileIntern from './pages/intern/Profile'
+
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -102,9 +104,11 @@ function App() {
                     <Route index path="profile" element={<ProfileSupervisor />} />
                 </Route>
 
-                <Route path="/admin" element={<LayoutAdmin />}>
-                    <Route index path="dashboard" element={<DashboardAdmin />} />
-                </Route>
+              {/** ADMIN */}
+              <Route path="/admin" element={<LayoutAdmin />}>
+                <Route index path="dashboard" element={<DashboardAdmin />} />
+                <Route index path="users" element={<Users />} />
+              </Route>
             </Routes>
         </div>
       </AnimatePresence>
