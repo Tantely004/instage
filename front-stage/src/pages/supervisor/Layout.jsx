@@ -1,24 +1,28 @@
-import { useState, useRef, useEffect } from "react";
-import { Outlet } from "react-router-dom";
-import { IconField } from "primereact/iconfield";
-import { InputIcon } from "primereact/inputicon";
-import { InputText } from "primereact/inputtext";
-import { Tooltip } from 'primereact/tooltip';
-import { TieredMenu } from 'primereact/tieredmenu';
-import useToolbar from "../../composables/useToolbar"; // Importer useToolbar
+import { useState, useRef, useEffect } from "react"
+import { Outlet, useNavigate } from "react-router-dom"
+import { IconField } from "primereact/iconfield"
+import { InputIcon } from "primereact/inputicon"
+import { InputText } from "primereact/inputtext"
+import { Tooltip } from 'primereact/tooltip'
+import { TieredMenu } from 'primereact/tieredmenu'
+import useToolbar from "../../composables/useToolbar";
 
 import SidebarSupervisor from "../../components/supervisor/Sidebar";
 import imgSupervisor from "../../assets/images/img_profile_supervisor.png";
 
 const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
-    const [collapsed, setCollapsed] = useState(false);
-    const { fetchUserData, userData, loading, error } = useToolbar(); // Utiliser le hook
+    const navigate = useNavigate()
+    const [collapsed, setCollapsed] = useState(false)
+    const { fetchUserData, userData, loading, error } = useToolbar()
 
     const profileMenu = useRef(null);
     const profileItems = [
         {
             label: 'Mon profil',
             icon: 'pi pi-user',
+            command : () => {
+                navigate('/supervisor/profile')
+            }
         },
         {
             label: 'Paramètres',
