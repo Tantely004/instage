@@ -1,4 +1,5 @@
 import { useRef } from "react"
+import { useNavigate } from "react-router-dom"
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
 import { Button } from "primereact/button"
@@ -13,6 +14,7 @@ import imgAdmin from "../../../assets/images/img_profile_supervisor.png"
 
 const Users = () => {
     const userMenus = useRef(null)
+    const navigate = useNavigate()
 
     const userItems = [
         {
@@ -246,6 +248,7 @@ const Users = () => {
                     icon="pi pi-plus" 
                     label="Ajouter"
                     className="!text-sm !py-2 !font-poppins"
+                    onClick={() => navigate('/admin/users/create')}
                 />
             </div>
 
