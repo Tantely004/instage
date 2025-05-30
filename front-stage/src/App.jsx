@@ -24,6 +24,7 @@ import CreatePlanning from './pages/intern/Planning/Create'
 import ProfileSupervisor from './pages/supervisor/Profile'
 import ProfileIntern from './pages/intern/Profile'
 import Users from './pages/admin/users'
+import CreateUser from './pages/admin/users/Create'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
@@ -108,6 +109,7 @@ function App() {
               <Route path="/admin" element={<LayoutAdmin />}>
                 <Route index path="dashboard" element={<DashboardAdmin />} />
                 <Route index path="users" element={<Users />} />
+                <Route index path="users/create" element={<CreateUser />} />
               </Route>
             </Routes>
         </div>
