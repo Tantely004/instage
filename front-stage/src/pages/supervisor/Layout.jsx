@@ -1,20 +1,21 @@
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { Outlet, useNavigate } from "react-router-dom"
 import { IconField } from "primereact/iconfield"
 import { InputIcon } from "primereact/inputicon"
 import { InputText } from "primereact/inputtext"
 import { Tooltip } from 'primereact/tooltip'
 import { TieredMenu } from 'primereact/tieredmenu'
+import useToolbar from "../../composables/useToolbar";
 
-import SidebarSupervisor from "../../components/supervisor/Sidebar"
-
-import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
+import SidebarSupervisor from "../../components/supervisor/Sidebar";
+import imgSupervisor from "../../assets/images/img_profile_supervisor.png";
 
 const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
     const navigate = useNavigate()
     const [collapsed, setCollapsed] = useState(false)
+    const { fetchUserData, userData, loading, error } = useToolbar()
 
-    const profileMenu = useRef(null)
+    const profileMenu = useRef(null);
     const profileItems = [
         {
             label: 'Mon profil',
@@ -30,8 +31,25 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
-        }
-    ]
+        },
+    ];
+
+    // Récupérer les données de l'utilisateur au chargement du composant
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    if (loading) {
+        return <div>Chargement...</div>;
+    }
+
+    if (error) {
+        return <div className="text-red-600 text-center">{error}</div>;
+    }
+
+    // Utiliser une image par défaut si userData.image est null
+    const profileImage = userData?.image || imgSupervisor;
+    const fullName = userData ? `${userData.firstname} ${userData.name}` : "Utilisateur";
 
     return (
         <div className="flex dark:bg-gray-800">
@@ -68,7 +86,7 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
                         <i className="pi pi-bell text-black/60 dark:text-white"/>
                         <i className="pi pi-cog text-black/60 dark:text-white"/>
                         <img 
-                            src={imgSupervisor} 
+                            src={profileImage} 
                             className="custom-tooltip-img w-12 h-12 rounded-full cursor-pointer"
                             onClick={(e) => profileMenu.current.toggle(e)}
                         />
@@ -91,7 +109,7 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
                                 Votre profil
                             </h6>
                             <p className='font-bold'>
-                                MANDIMBISOA Laza
+                                {fullName}
                             </p>
                         </Tooltip>
                     </div>
@@ -107,7 +125,7 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
                 </main>
             </div>
         </div>
-    )
-}
+    );
+};
 
-export default LayoutSupervisor
+export default LayoutSupervisor;

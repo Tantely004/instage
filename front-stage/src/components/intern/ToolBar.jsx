@@ -1,20 +1,22 @@
-import { useMemo, useRef } from 'react'
-import { useLocation, useNavigate } from 'react-router-dom'
-import { Menubar } from 'primereact/menubar'
-import { IconField } from "primereact/iconfield"
-import { InputIcon } from "primereact/inputicon"
-import { InputText } from "primereact/inputtext"
-import { Tooltip } from 'primereact/tooltip'
-import { TieredMenu } from 'primereact/tieredmenu'
+import { useMemo, useRef, useEffect } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Menubar } from 'primereact/menubar';
+import { IconField } from "primereact/iconfield";
+import { InputIcon } from "primereact/inputicon";
+import { InputText } from "primereact/inputtext";
+import { Tooltip } from 'primereact/tooltip';
+import { TieredMenu } from 'primereact/tieredmenu';
+import useToolbar from '../../composables/useToolbar'; // Importer useToolbar
 
-import Logo from '../Logo'
-import imgProfile from '../../assets/images/img_profile_intern.jpg'
+import Logo from '../Logo';
+import imgProfile from '../../assets/images/img_profile_intern.jpg';
 
 const Toolbar = () => {
-    const location = useLocation()
-    const navigate = useNavigate()
+    const location = useLocation();
+    const navigate = useNavigate();
+    const { fetchUserData, userData, loading, error } = useToolbar();
 
-    const profileMenu = useRef(null)
+    const profileMenu = useRef(null);
     const profileItems = [
         {
             label: 'Mon profil',
@@ -27,8 +29,8 @@ const Toolbar = () => {
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
-        }
-    ]
+        },
+    ];
 
     const menuItems = useMemo(() => [
         {
@@ -55,7 +57,24 @@ const Toolbar = () => {
             command: () => navigate('/intern/ressources'),
             className: location.pathname === '/intern/ressources' ? 'bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
         },
-    ], [location.pathname, navigate]) 
+    ], [location.pathname, navigate]);
+
+    // Récupérer les données de l'utilisateur au chargement du composant
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
+    if (loading) {
+        return <div>Chargement...</div>;
+    }
+
+    if (error) {
+        return <div className="text-red-600 text-center">{error}</div>;
+    }
+
+    // Utiliser une image par défaut si userData.image est null
+    const profileImage = userData?.image || imgProfile;
+    const fullName = userData ? `${userData.firstname} ${userData.name}` : "Mandimbisoa Laza";
 
     return (
         <header className="mt-4 h-20 flex justify-between px-16 items-center w-full">
@@ -94,7 +113,7 @@ const Toolbar = () => {
                 </div>
 
                 <img 
-                    src={imgProfile} 
+                    src={profileImage} 
                     className='custom-tooltip-img w-12 h-12 object-center rounded-full border-1 border-gray-200 cursor-pointer'
                     onClick={(e) => profileMenu.current.toggle(e)}
                 />
@@ -117,12 +136,12 @@ const Toolbar = () => {
                         Votre profil
                     </h6>
                     <p className='font-bold'>
-                        ANDRIANARIDERA Tantely Ny Aina
+                        {fullName}
                     </p>
-                 </Tooltip>
+                </Tooltip>
             </div>
         </header>
-    )
-}
+    );
+};
 
-export default Toolbar
+export default Toolbar;
