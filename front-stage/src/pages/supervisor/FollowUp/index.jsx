@@ -73,6 +73,30 @@ const FollowUpSupervisor = () => {
         },
     ]
 
+    const reports = [
+        {
+            id: 1,
+            title: 'Rapport test front-end',
+            document: 'rapport_test.pdf',
+            date: '2024-05-19',
+            intern: 'John Doe',
+        },
+        {
+            id: 1,
+            title: 'Rapport test front-end',
+            document: 'rapport_test.pdf',
+            date: '2024-05-19',
+            intern: 'John Doe',
+        },
+        {
+            id: 1,
+            title: 'Rapport test front-end',
+            document: 'rapport_test.pdf',
+            date: '2024-05-19',
+            intern: 'John Doe',
+        },
+    ]
+
     const idTemplate = (interns) => {
         return (
             <span>
@@ -99,7 +123,7 @@ const FollowUpSupervisor = () => {
 
     const actionTemplate = () => {
         return (
-            <i className='pi pi-ellipsis-v'/>
+            <i className='pi pi-ellipsis-h'/>
         )
     }
 
@@ -114,6 +138,20 @@ const FollowUpSupervisor = () => {
             <span>
                 {projects.progress}%
             </span>
+        )
+    }
+
+    const idReportTemplate = (reports) => {
+        return (
+            <span>
+                #{reports.id}
+            </span>
+        )
+    }
+
+    const actionReportTemplate = () => {
+        return (
+            <i className='pi pi-ellipsis-h'/>
         )
     }
 
@@ -220,13 +258,79 @@ const FollowUpSupervisor = () => {
                 </div>
             </section>
 
-            <section className='grid grid-cols-3 gap-8'>
-                <div className='col-span-2'>
+            <section className='mt-12 grid grid-cols-3 gap-8'>
+                <div className='col-span-2 flex flex-col justify-between space-y-8 shadow p-6 rounded-lg'>
+                    <div>
+                        <div className='flex justify-between items-center'>
+                            <h2 className='text-gray-700 font-semibold text-lg'>
+                                Récents rapports
+                            </h2>
+                            <i 
+                                className='pi pi-ellipsis-v cursor-pointer hover:text-indigo-400'
+                                title="Options"
+                            />
+                        </div>
 
+                        <div className='mt-6'>
+                            <DataTable value={reports}>
+                                <Column 
+                                    header='ID'
+                                    body={idReportTemplate}
+                                />
+                                <Column 
+                                    field='title'
+                                    header='Intitulé'
+                                />
+                                <Column 
+                                    field='document'
+                                    header='Document'
+                                />
+                                <Column 
+                                    field='date'
+                                    header='Date'
+                                />
+                                <Column 
+                                    field='intern'
+                                    header='Stagiaire'
+                                />
+                                <Column 
+                                    header='Action'
+                                    body={actionReportTemplate}
+                                />
+                            </DataTable>
+                        </div>
+                    </div>
+
+                    <div>
+                        <Button 
+                            label='Voir tout'
+                            className='!flex !justify-between !items-center !mx-auto !bg-transparent !text-indigo-400 !border-none'
+                        />
+                    </div>
                 </div>
 
-                <div className='col-span-1'>
+                <div className='col-span-1 flex flex-col space-y-8'>
+                    <div className='shadow p-6 rounded-lg'>
+                        <p className='text-center'>
+                            Organisez votre programme de réalisation efficacement à partir de système interactif
+                        </p>
 
+                        <Button 
+                            label='Créer un planning'
+                            className='!mt-8 !border-none !flex !justify-center !items-center !mx-auto'
+                        />
+                    </div>
+
+                    <div className=' bg-indigo-400 p-6 rounded-lg'>
+                        <p className='text-white font-semibold text-center'>
+                            Générez le rapport d'évaluation finale détaillant les compétences et appréciations du stagiaire, pret à etre exporté et partagé
+                        </p>
+
+                        <Button 
+                            label='Génerer le rapport'
+                            className='!mt-8 !bg-gray-700 !border-none !flex !justify-center !items-center !mx-auto'
+                        />
+                    </div>
                 </div>
             </section>
         </motion.div>
