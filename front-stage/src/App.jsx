@@ -26,10 +26,10 @@ import ProfileIntern from './pages/intern/Profile'
 import Users from './pages/admin/users'
 import CreateUser from './pages/admin/users/Create'
 import FollowUpSupervisor from './pages/supervisor/FollowUp'
+import FollowUpAdmin from './pages/admin/FollowUp'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
-
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -112,6 +112,7 @@ function App() {
                 <Route index path="dashboard" element={<DashboardAdmin />} />
                 <Route index path="users" element={<Users />} />
                 <Route index path="users/create" element={<CreateUser />} />
+                <Route index path="follow-up" element={<FollowUpAdmin />} />
               </Route>
             </Routes>
         </div>
