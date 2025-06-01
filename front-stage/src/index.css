@@ -11,3 +11,7 @@ body {
   font-family: 'Poppins';
   @apply text-gray-800;
 }
+
+.p-datatable .p-datatable-tbody > tr > td {
+  font-family: 'Poppins' !important;
+}

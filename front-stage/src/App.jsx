@@ -16,6 +16,7 @@ import LayoutAdmin from './pages/admin/Layout'
 import DashboardAdmin from './pages/admin/Dashboard'
 import Users from './pages/admin/users'
 import CreateUser from './pages/admin/users/Create'
+import FollowUpAdmin from './pages/admin/FollowUp'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -57,6 +58,7 @@ function App() {
                 <Route index path="dashboard" element={<DashboardAdmin />} />
                 <Route index path="users" element={<Users />} />
                 <Route index path="users/create" element={<CreateUser />} />
+                <Route index path="follow-up" element={<FollowUpAdmin />} />
               </Route>
             </Routes>
         </div>
