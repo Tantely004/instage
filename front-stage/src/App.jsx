@@ -25,6 +25,7 @@ import ProfileSupervisor from './pages/supervisor/Profile'
 import ProfileIntern from './pages/intern/Profile'
 import Users from './pages/admin/users'
 import CreateUser from './pages/admin/users/Create'
+import FollowUpSupervisor from './pages/supervisor/FollowUp'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
@@ -102,6 +103,7 @@ function App() {
                     element={<LayoutSupervisor setIsDarkMode={setIsDarkMode} isDarkMode={isDarkMode} />}
                 >
                     <Route index path="dashboard" element={<DashboardSupervisor />} />
+                    <Route index path="follow-up" element={<FollowUpSupervisor />} />
                     <Route index path="profile" element={<ProfileSupervisor />} />
                 </Route>
 
