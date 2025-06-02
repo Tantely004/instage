@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Chart } from 'primereact/chart';
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import useReport from '../../composables/useReport'; // Importer useReport
 
@@ -23,6 +24,7 @@ const DashboardAdmin = () => {
     // Récupérer les données au chargement du composant
     useEffect(() => {
         fetchDashboardData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Mettre à jour le graphique des statistiques de stage

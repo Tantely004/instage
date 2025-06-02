@@ -276,6 +276,15 @@ class DashboardInstructorAPIView(APIView):
             "supervisions": supervisions,
         }, status=status.HTTP_200_OK)
 
+from rest_framework.views import APIView
+from rest_framework.response import Response
+from rest_framework import status
+from rest_framework.permissions import IsAuthenticated
+from django.db.models import Count
+from django.db.models.functions import ExtractMonth
+from datetime import datetime
+from .models import User, Internship, Document, Report, Intern
+
 class DashboardAdminAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -292,22 +301,59 @@ class DashboardAdminAPIView(APIView):
             # Compter les utilisateurs par rôle
             interns_count = User.objects.filter(role='intern').count()
             instructors_count = User.objects.filter(role='instructor').count()
-            admins_count = User.objects.filter(role__in=['administrator']).count()  # Accepter les deux rôles
+            admins_count = User.objects.filter(role__in=['administrator']).count()
 
             # Compter les documents
-            reports_count = Internship.objects.filter(status='completed').count() * 10
-            attestations_count = Internship.objects.filter(is_finished=True).count() * 2
+            # Rapports : Compter les documents liés aux rapports soumis
+            reports_count = Report.objects.filter(status='submitted').count()
+            # Attestations : Estimation basée sur les stages terminés (is_finished=True)
+            attestations_count = Internship.objects.filter(is_finished=True).count()
 
-            # Statistiques de stage (exemple basé sur les données de l'interface)
+            # Statistiques de stage : Compter les stages par mois (basé sur start_date)
+            current_year = datetime.now().year  # 2025
+            stage_counts = (
+                Internship.objects
+                .filter(start_date__year=current_year)
+                .annotate(month=ExtractMonth('start_date'))
+                .values('month')
+                .annotate(count=Count('id'))
+                .order_by('month')
+            )
+
+            # Initialiser les données pour chaque mois (0 par défaut)
+            months = ["Jan", "Fév", "Mars", "Avr", "Mai", "Juin", "Juil", "Aout", "Sept", "Oct", "Nov", "Déc"]
+            stage_data = [0] * 12  # Liste de 12 zéros pour chaque mois
+            for entry in stage_counts:
+                month_index = entry['month'] - 1  # Mois de 1 à 12 -> index de 0 à 11
+                stage_data[month_index] = entry['count']
+
             stage_statistics = {
-                "labels": ["Jan", "Fév", "Mars", "Avr", "Mai", "Juin", "Juil", "Aout", "Sept", "Oct", "Nov", "Déc"],
-                "data": [0, 2, 4, 4, 4, 0, 0, 0, 1, 1, 2, 5]
+                "labels": months,
+                "data": stage_data
             }
 
-            # Répartition par niveau (exemple basé sur les données de l'interface)
+            # Répartition par niveau : Compter les stagiaires par niveau
+            level_counts = (
+                Intern.objects
+                .values('level')
+                .annotate(count=Count('user_id'))
+                .order_by('level')
+            )
+
+            level_labels = []
+            level_data = []
+            for entry in level_counts:
+                level_labels.append(entry['level'])
+                level_data.append(entry['count'])
+
+            # Si aucun niveau n'est trouvé, fournir des valeurs par défaut
+            if not level_labels:
+                level_labels = ["Licence", "Master"]
+                level_data = [0, 0]
+
             level_distribution = {
-                "labels": ["Licence", "Master"],
-                "data": [4, 1]
+                "labels": level_labels,
+                "data": level_data
             }
 
             response_data = {
