@@ -8,7 +8,7 @@ import Logo from '../Logo';
 const SidebarSupervisor = ({ collapsed, setCollapsed, isDarkMode, setIsDarkMode }) => {
   const menuItems = [
     { label: 'Tableau de bord', icon: 'pi pi-home', path: '/supervisor/dashboard' },
-    { label: 'Suivi', icon: 'pi pi-chart-line', path: '/suivi' },
+    { label: 'Suivi', icon: 'pi pi-chart-line', path: '/supervisor/follow-up' },
     { label: 'Calendrier', icon: 'pi pi-calendar', path: '/calendrier' },
     { label: 'Ressources', icon: 'pi pi-folder', path: '/ressources' },
     { label: 'Évaluations', icon: 'pi pi-star', path: '/evaluations' },

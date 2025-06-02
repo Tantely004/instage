@@ -17,3 +17,7 @@ body {
 @theme {
   --font-poppins: 'Poppins';
 }
+
+.p-datatable .p-datatable-tbody > tr > td {
+  font-family: 'Poppins' !important;
+}
