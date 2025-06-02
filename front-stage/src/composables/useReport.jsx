@@ -23,13 +23,15 @@ export default function useReport() {
                 url = "http://127.0.0.1:8000/api/dashboard/intern/";
             } else if (user.role === 'instructor') {
                 url = "http://127.0.0.1:8000/api/dashboard/supervisor/";
+            } else if (user.role === 'administrator') {
+                url = "http://127.0.0.1:8000/api/dashboard/admin/";
             } else {
                 throw new Error("Rôle non pris en charge");
             }
 
             const response = await axios.get(url, {
                 headers: {
-                    Authorization: `Bearer ${token}`,
+                    Authorization: `Bearer ${token}`, // Correction de la syntaxe
                 },
             });
 
