@@ -16,6 +16,7 @@ import PlanningIndex from './pages/intern/Planning/index'
 import MyInternship from './pages/intern/Me'
 import CreatePlanning from './pages/intern/Planning/Create'
 import ProfileIntern from './pages/intern/Profile'
+import ProjectIntern from './pages/intern/Me/Project'
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -69,6 +70,7 @@ function App() {
                   <Route index path="planning" element={<PlanningIndex />} />
                   <Route index path="planning/create" element={<CreatePlanning />} />
                   <Route index path="me" element={<MyInternship />} />
+                  <Route index path="me/project" element={<ProjectIntern />} />
                   <Route index path="profile" element={<ProfileIntern />} />
                 </Route>
 
