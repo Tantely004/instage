@@ -118,7 +118,7 @@ const DashboardAdmin = () => {
     }, [dashboardData]);
 
     if (loading) {
-        return <div>Chargement...</div>;
+        return <div></div>;
     }
 
     if (error) {
@@ -126,7 +126,7 @@ const DashboardAdmin = () => {
     }
 
     if (!dashboardData) {
-        return <div>Aucune donnée disponible</div>;
+        return <div></div>;
     }
 
     return (

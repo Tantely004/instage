@@ -1,132 +1,376 @@
 /* eslint-disable no-unused-vars */
-import { useState, useRef } from "react"
-import { motion } from "framer-motion"
-import { InputText } from "primereact/inputtext"
-import { Calendar } from "primereact/calendar"
-import { InputTextarea } from "primereact/inputtextarea"
-import { BreadCrumb } from 'primereact/breadcrumb'
-import { Button } from 'primereact/button'
-import { Editor } from 'primereact/editor'
-import { Dropdown } from 'primereact/dropdown'
-import { FileUpload } from 'primereact/fileupload'
-import { Dialog } from 'primereact/dialog'
-import { Toast } from 'primereact/toast'
-import { useNavigate } from "react-router-dom"
+import { useState, useRef } from "react";
+import { motion } from "framer-motion";
+import { InputText } from "primereact/inputtext";
+import { Calendar } from "primereact/calendar";
+import { InputTextarea } from "primereact/inputtextarea";
+import { BreadCrumb } from "primereact/breadcrumb";
+import { Button } from "primereact/button";
+import { Editor } from "primereact/editor";
+import { Dropdown } from "primereact/dropdown";
+import { FileUpload } from "primereact/fileupload";
+import { Dialog } from "primereact/dialog";
+import { Toast } from "primereact/toast";
+import { useNavigate } from "react-router-dom";
+import Tesseract from "tesseract.js";
+import mammoth from "mammoth";
+import { getDocument } from "pdfjs-dist";
 
 const CreatePlanning = () => {
-    const [submitted, setSubmitted] = useState(false)
-    const [selectedSeverity, setSelectedSeverity] = useState(null)
-    const [selectedStatus, setSelectedStatus] = useState(null)
+    const [submitted, setSubmitted] = useState(false);
+    const [selectedSeverity, setSelectedSeverity] = useState(null);
+    const [selectedStatus, setSelectedStatus] = useState(null);
     const [tasks, setTasks] = useState([
-        { id: 1, filled: true, title: "" },
-        { id: 2, filled: true, title: "" },
-    ])
-    const [files, setFiles] = useState([])
-    const toast = useRef(null)
-    const navigate = useNavigate()
+        { id: 1, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+        { id: 2, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+    ]);
+    const [files, setFiles] = useState([]);
+    const [title, setTitle] = useState("");
+    const [startDate, setStartDate] = useState(null);
+    const [endDate, setEndDate] = useState(null);
+    const [description, setDescription] = useState("");
+    const toast = useRef(null);
+    const navigate = useNavigate();
 
     const severities = [
-        { name: 'Urgent', value: 'urgent' },
-        { name: 'Secondaire', value: 'secondary' },
-        { name: 'Optionnel', value: 'optional' },
-    ]
+        { name: "Urgent", value: "urgent" },
+        { name: "Secondaire", value: "secondary" },
+        { name: "Optionnel", value: "optional" },
+    ];
 
     const taskStatuses = [
-        { name: 'À faire', value: 'todo' },
-        { name: 'En cours', value: 'in-progress' },
-        { name: 'Terminé', value: 'done' },
-        { name: 'Annulé', value: 'cancelled' },
-    ]
+        { name: "À faire", value: "todo" },
+        { name: "En cours", value: "in-progress" },
+        { name: "Terminé", value: "done" },
+        { name: "Annulé", value: "cancelled" },
+    ];
+
+    // Regex pour les champs
+    const titleRegex = /^(?:titre|title):\s*(.+)$/i;
+    const startDateRegex = /^(?:date de début|start date):\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/i;
+    const endDateRegex = /^(?:date de fin|end date):\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/i;
+    const descriptionRegex = /^(?:description|détail):\s*(.+)$/i;
+    const taskRegex = /^(?:tâche|task):\s*(.+)$/i;
+    const fileExtensionRegex = /\.([a-zA-Z0-9]+)$/;
+
+    // Fonctions pour gérer les uploads par type de fichier
+    const fileHandlers = {
+        async handleTxt(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => resolve(e.target.result);
+                reader.onerror = (error) => reject(error);
+                reader.readAsText(file);
+            });
+        },
+        async handleDocx(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    const arrayBuffer = e.target.result;
+                    mammoth.extractRawText({ arrayBuffer })
+                        .then((result) => resolve(result.value))
+                        .catch((error) => reject(error));
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsArrayBuffer(file);
+            });
+        },
+        async handlePdf(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = async (e) => {
+                    const arrayBuffer = e.target.result;
+                    const pdf = await getDocument({ data: arrayBuffer }).promise;
+                    let text = "";
+                    for (let i = 1; i <= pdf.numPages; i++) {
+                        const page = await pdf.getPage(i);
+                        const content = await page.getTextContent();
+                        text += content.items.map((item) => item.str).join(" ");
+                    }
+                    resolve(text);
+                };
+                reader.onerror = (error) => reject(error);
+                reader.readAsArrayBuffer(file);
+            });
+        },
+        async handleImage(file) {
+            return new Promise((resolve, reject) => {
+                Tesseract.recognize(file, "fra", {
+                    logger: (info) => console.log(info),
+                })
+                    .then((result) => resolve(result.data.text))
+                    .catch((error) => reject(error));
+            });
+        },
+    };
+
+    // Fonction pour remplir les champs automatiquement avec regex
+    const fillFieldsFromText = (text) => {
+        const lines = text.split("\n").filter((line) => line.trim());
+        const data = {
+            title: "",
+            startDate: null,
+            endDate: null,
+            description: "",
+            tasks: [],
+        };
+
+        let currentTask = null;
+        let hasEncounteredTask = false;
+
+        lines.forEach((line) => {
+            const trimmedLine = line.trim();
+            if (!trimmedLine) return;
+
+            let match;
+
+            // Titre
+            if ((match = trimmedLine.match(titleRegex))) {
+                data.title = match[1].trim() || "Nouveau chronogramme";
+            }
+
+            // Date de début globale
+            if ((match = trimmedLine.match(startDateRegex))) {
+                const dateStr = match[1].trim();
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    data.startDate = new Date(dateStr);
+                } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split("/");
+                    data.startDate = new Date(`${year}-${month}-${day}`);
+                }
+            }
+
+            // Date de fin globale
+            if ((match = trimmedLine.match(endDateRegex))) {
+                const dateStr = match[1].trim();
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    data.endDate = new Date(dateStr);
+                } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split("/");
+                    data.endDate = new Date(`${year}-${month}-${day}`);
+                }
+            }
+
+            // Description (uniquement avant la première tâche)
+            if (!hasEncounteredTask && (match = trimmedLine.match(descriptionRegex))) {
+                data.description = match[1].trim() || "Description par défaut";
+            }
+
+            // Tâche
+            if ((match = trimmedLine.match(taskRegex))) {
+                hasEncounteredTask = true;
+                currentTask = { title: match[1].trim(), detail: "", startDate: null, endDate: null, priority: null, status: null };
+                data.tasks.push(currentTask);
+            }
+
+            // Détail de la tâche
+            if (currentTask && (match = trimmedLine.match(/^détail:\s*(.+)$/i))) {
+                currentTask.detail = match[1].trim();
+            }
+
+            // Date de début de la tâche
+            if (currentTask && (match = trimmedLine.match(/^date de début:\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/i))) {
+                const dateStr = match[1].trim();
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    currentTask.startDate = new Date(dateStr);
+                } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split("/");
+                    currentTask.startDate = new Date(`${year}-${month}-${day}`);
+                }
+            }
+
+            // Date de fin de la tâche
+            if (currentTask && (match = trimmedLine.match(/^date de fin:\s*(\d{4}-\d{2}-\d{2}|\d{2}\/\d{2}\/\d{4})$/i))) {
+                const dateStr = match[1].trim();
+                if (dateStr.match(/^\d{4}-\d{2}-\d{2}$/)) {
+                    currentTask.endDate = new Date(dateStr);
+                } else if (dateStr.match(/^\d{2}\/\d{2}\/\d{4}$/)) {
+                    const [day, month, year] = dateStr.split("/");
+                    currentTask.endDate = new Date(`${year}-${month}-${day}`);
+                }
+            }
+
+            // Priorité de la tâche
+            if (currentTask && (match = trimmedLine.match(/^priorité:\s*(urgent|secondaire|optionnel)$/i))) {
+                currentTask.priority = match[1].toLowerCase();
+            }
+
+            // État de la tâche
+            if (currentTask && (match = trimmedLine.match(/^état de la tâche:\s*(à faire|en cours|terminé|annulé)$/i))) {
+                const statusText = match[1].toLowerCase();
+                if (statusText === "à faire") {
+                    currentTask.status = "todo";
+                } else if (statusText === "en cours") {
+                    currentTask.status = "in-progress";
+                } else if (statusText === "terminé") {
+                    currentTask.status = "done";
+                } else if (statusText === "annulé") {
+                    currentTask.status = "cancelled";
+                }
+            }
+        });
+
+        // Mettre à jour les états globaux
+        setTitle(data.title);
+        setStartDate(data.startDate || null);
+        setEndDate(data.endDate || null);
+        setDescription(data.description);
+
+        // Mettre à jour les tâches
+        const updatedTasks = tasks.map((task, index) => {
+            if (index < data.tasks.length && task.filled) {
+                return {
+                    ...task,
+                    title: data.tasks[index].title || task.title,
+                    detail: data.tasks[index].detail || task.detail,
+                    startDate: data.tasks[index].startDate || task.startDate,
+                    endDate: data.tasks[index].endDate || task.endDate,
+                    priority: data.tasks[index].priority || task.priority,
+                    status: data.tasks[index].status || task.status,
+                };
+            }
+            return task;
+        });
+        setTasks(updatedTasks);
+
+        toast.current.show({
+            severity: "info",
+            summary: "Analyse terminée",
+            detail: "Les champs ont été remplis automatiquement.",
+            life: 3000,
+        });
+    };
 
     const handleAddTask = () => {
-        setTasks(prevTasks => {
-            const index = prevTasks.findIndex(task => !task.filled)
+        setTasks((prevTasks) => {
+            const index = prevTasks.findIndex((task) => !task.filled);
             if (index !== -1) {
-                const updatedTasks = [...prevTasks]
-                updatedTasks[index].filled = true
-                return updatedTasks
+                const updatedTasks = [...prevTasks];
+                updatedTasks[index].filled = true;
+                return updatedTasks;
             } else {
-                toast.current.show({ 
-                    severity: 'warn', 
-                    summary: 'Limite atteinte', 
-                    detail: 'Toutes les tâches disponibles sont remplies.', 
-                    life: 3000 
-                })
+                toast.current.show({
+                    severity: "warn",
+                    summary: "Limite atteinte",
+                    detail: "Toutes les tâches disponibles sont remplies.",
+                    life: 3000,
+                });
             }
-            return prevTasks
-        })
-    }
+            return prevTasks;
+        });
+    };
 
     const handleTaskTitleChange = (taskId, value) => {
-        setTasks(prevTasks => 
-            prevTasks.map(task => 
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
                 task.id === taskId ? { ...task, title: value } : task
             )
-        )
-    }
+        );
+    };
 
     const handleSavePlanning = () => {
-        const hasEmptyTitles = tasks.some(task => task.filled && !task.title.trim())
+        const hasEmptyTitles = tasks.some((task) => task.filled && !task.title.trim());
         if (hasEmptyTitles) {
-            toast.current.show({ 
-                severity: 'error', 
-                summary: 'Erreur', 
-                detail: 'Veuillez remplir tous les titres des tâches.', 
-                life: 3000 
-            })
-            return
+            toast.current.show({
+                severity: "error",
+                summary: "Erreur",
+                detail: "Veuillez remplir tous les titres des tâches.",
+                life: 3000,
+            });
+            return;
         }
-        toast.current.show({ 
-            severity: 'success', 
-            summary: 'Enregistré', 
-            detail: 'Le chronogramme a été enregistré avec succès.', 
-            life: 3000 
-        })
-    }
+        toast.current.show({
+            severity: "success",
+            summary: "Enregistré",
+            detail: "Le chronogramme a été enregistré avec succès.",
+            life: 3000,
+        });
+    };
 
     const items = [
-        { 
-            label: 'Planning',
-            command: () => navigate('/intern/planning')
+        {
+            label: "Planning",
+            command: () => navigate("/intern/planning"),
         },
-        { 
-            label: 'Nouveau',
-            command: () => navigate('/intern/planning/create')
-        }, 
-    ]
-    const home = { 
-        icon: 'pi pi-home', 
-    }
+        {
+            label: "Nouveau",
+            command: () => navigate("/intern/planning/create"),
+        },
+    ];
+    const home = {
+        icon: "pi pi-home",
+    };
 
-    const handleFileUpload = (event) => {
-        const selectedFiles = Array.from(event.target.files || event.dataTransfer.files)
-        setFiles(prevFiles => [...prevFiles, ...selectedFiles])
-        toast.current.show({ 
-            severity: 'info', 
-            summary: 'Fichier chargé', 
-            detail: 'Les fichiers ont été ajoutés avec succès.', 
-            life: 3000 
-        })
-    }
+    const handleFileUpload = async (event) => {
+        const selectedFiles = Array.from(event.target.files || event.dataTransfer.files);
+        for (const file of selectedFiles) {
+            const match = file.name.match(fileExtensionRegex);
+            const extension = match ? match[1].toLowerCase() : null;
+            let textContent;
+
+            try {
+                switch (extension) {
+                    case "txt":
+                        textContent = await fileHandlers.handleTxt(file);
+                        break;
+                    case "docx":
+                        textContent = await fileHandlers.handleDocx(file);
+                        break;
+                    case "pdf":
+                        textContent = await fileHandlers.handlePdf(file);
+                        break;
+                    case "jpg":
+                    case "png":
+                        textContent = await fileHandlers.handleImage(file);
+                        break;
+                    default:
+                        toast.current.show({
+                            severity: "error",
+                            summary: "Format non pris en charge",
+                            detail: `Le format ${extension ? "." + extension : "inconnu"} n'est pas supporté.`,
+                            life: 3000,
+                        });
+                        continue;
+                }
+
+                fillFieldsFromText(textContent);
+                setFiles((prevFiles) => [...prevFiles, file]);
+                toast.current.show({
+                    severity: "info",
+                    summary: "Fichier chargé",
+                    detail: `Le fichier ${file.name} a été analysé avec succès.`,
+                    life: 3000,
+                });
+            } catch (error) {
+                toast.current.show({
+                    severity: "error",
+                    summary: "Erreur d'analyse",
+                    detail: `Erreur lors de l'analyse de ${file.name}: ${error.message}`,
+                    life: 3000,
+                });
+            }
+        }
+    };
 
     const handleDragOver = (event) => {
-        event.preventDefault()
-    }
+        event.preventDefault();
+    };
 
     const handleDrop = (event) => {
-        event.preventDefault()
-        handleFileUpload(event)
-    }
+        event.preventDefault();
+        handleFileUpload(event);
+    };
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
         out: { opacity: 0, y: -5 },
-    }
+    };
 
     const pageTransition = {
         duration: 0.5,
-    }
+    };
 
     return (
         <motion.div
@@ -139,12 +383,12 @@ const CreatePlanning = () => {
         >
             <Toast ref={toast} />
             <div>
-                <BreadCrumb 
-                    model={items} 
+                <BreadCrumb
+                    model={items}
                     home={home}
                     className="!font-semibold !text-sm !bg-transparent !border-0 !p-0"
                     pt={{
-                        label: { className: '!text-indigo-500' },
+                        label: { className: "!text-indigo-500" },
                     }}
                 />
             </div>
@@ -152,64 +396,71 @@ const CreatePlanning = () => {
             <form onSubmit={(e) => e.preventDefault()}>
                 <section className="grid grid-cols-3 gap-16 mt-10">
                     <div className="col-span-2">
-                        <h1 className="text-gray-800 text-3xl font-bold">
-                            Nouveau chronogramme
-                        </h1>
+                        <h1 className="text-gray-800 text-3xl font-bold">Nouveau chronogramme</h1>
 
                         <div className="mt-8">
                             <div className="flex flex-col space-y-3">
                                 <label>
-                                    <i className="pi pi-file text-indigo-400 mr-3"/>
+                                    <i className="pi pi-file text-indigo-400 mr-3" />
                                     Titre du chronogramme
                                 </label>
                                 <InputText
                                     size="small"
                                     className="w-full"
+                                    value={title}
+                                    onChange={(e) => setTitle(e.target.value)}
                                 />
                             </div>
 
                             <div className="grid grid-cols-2 gap-6 mt-4">
                                 <div className="flex flex-col space-y-3">
                                     <label>
-                                        <i className="pi pi-calendar text-indigo-400 mr-3"/>
+                                        <i className="pi pi-calendar text-indigo-400 mr-3" />
                                         Date de début
                                     </label>
                                     <Calendar
                                         size="small"
                                         className="w-full"
+                                        value={startDate}
+                                        onChange={(e) => setStartDate(e.value)}
+                                        dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
                                     />
                                 </div>
                                 <div className="flex flex-col space-y-3">
                                     <label>
-                                        <i className="pi pi-calendar text-indigo-400 mr-3"/>
+                                        <i className="pi pi-calendar text-indigo-400 mr-3" />
                                         Date de fin
                                     </label>
                                     <Calendar
                                         size="small"
                                         className="w-full"
+                                        value={endDate}
+                                        onChange={(e) => setEndDate(e.value)}
+                                        dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
                                     />
                                 </div>
                             </div>
 
                             <div className="flex flex-col space-y-3 mt-4">
                                 <label>
-                                    <i className="pi pi-align-left text-indigo-400 mr-3"/>
-                                    Ajouter une description 
+                                    <i className="pi pi-align-left text-indigo-400 mr-3" />
+                                    Ajouter une description
                                 </label>
                                 <InputTextarea
                                     rows={5}
                                     className="w-full"
+                                    value={description}
+                                    onChange={(e) => setDescription(e.target.value)}
                                 />
                             </div>
                         </div>
                     </div>
 
                     <div className="col-span-1 shadow rounded-lg p-8">
-                        <h2 className="text-xl font-semibold text-indigo-500">
-                            Importer un fichier
-                        </h2>
+                        <h2 className="text-xl font-semibold text-indigo-500">Importer un fichier</h2>
                         <p className="mt-2">
-                            Créez facilement votre chronogramme à partir des fichiers téléchargés à partir de notre système OCR
+                            Créez facilement votre chronogramme à partir des fichiers téléchargés à partir de notre
+                            système OCR
                         </p>
 
                         <motion.div
@@ -260,9 +511,7 @@ const CreatePlanning = () => {
 
                 <section className="mt-20">
                     <div className="flex justify-between items-center">
-                        <h2 className="text-2xl font-bold text-indigo-500">
-                            Organiser les tâches
-                        </h2>
+                        <h2 className="text-2xl font-bold text-indigo-500">Organiser les tâches</h2>
                         <div className="flex justify-end items-center gap-8">
                             <Button
                                 icon="pi pi-plus"
@@ -277,7 +526,7 @@ const CreatePlanning = () => {
                                 className="!bg-gray-700 hover:!bg-gray-800 !border-none text-white"
                                 onClick={handleSavePlanning}
                             />
-                            <i 
+                            <i
                                 className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400"
                                 title="Options"
                             />
@@ -290,63 +539,130 @@ const CreatePlanning = () => {
                                 {task.filled ? (
                                     <div>
                                         <div className="flex flex-col space-y-3">
-                                            <label><i className="pi pi-file text-indigo-400 mr-3"/>Intitulé</label>
-                                            <InputText 
-                                                size="small" 
-                                                className="w-full" 
+                                            <label>
+                                                <i className="pi pi-file text-indigo-400 mr-3" />
+                                                Intitulé
+                                            </label>
+                                            <InputText
+                                                size="small"
+                                                className="w-full"
                                                 value={task.title}
                                                 onChange={(e) => handleTaskTitleChange(task.id, e.target.value)}
                                             />
                                         </div>
                                         <div className="flex flex-col space-y-3 mt-4">
-                                            <label><i className="pi pi-align-left text-indigo-400 mr-3"/>Détail</label>
-                                            <Editor className="h-64 text-sm" />
+                                            <label>
+                                                <i className="pi pi-align-left text-indigo-400 mr-3" />
+                                                Détail
+                                            </label>
+                                            <Editor
+                                                value={task.detail}
+                                                onTextChange={(e) =>
+                                                    setTasks((prevTasks) =>
+                                                        prevTasks.map((t) =>
+                                                            t.id === task.id ? { ...t, detail: e.htmlValue } : t
+                                                        )
+                                                    )
+                                                }
+                                                className="h-64 text-sm"
+                                            />
                                         </div>
                                         <div className="grid grid-cols-2 gap-6 mt-20">
                                             <div className="flex flex-col space-y-3">
-                                                <label><i className="pi pi-calendar text-indigo-400 mr-3"/>Date de début</label>
-                                                <Calendar size="small" className="w-full" />
+                                                <label>
+                                                    <i className="pi pi-calendar text-indigo-400 mr-3" />
+                                                    Date de début
+                                                </label>
+                                                <Calendar
+                                                    size="small"
+                                                    className="w-full"
+                                                    value={task.startDate}
+                                                    onChange={(e) =>
+                                                        setTasks((prevTasks) =>
+                                                            prevTasks.map((t) =>
+                                                                t.id === task.id ? { ...t, startDate: e.value } : t
+                                                            )
+                                                        )
+                                                    }
+                                                    dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                                />
                                             </div>
                                             <div className="flex flex-col space-y-3">
-                                                <label><i className="pi pi-calendar text-indigo-400 mr-3"/>Date de fin</label>
-                                                <Calendar size="small" className="w-full" />
+                                                <label>
+                                                    <i className="pi pi-calendar text-indigo-400 mr-3" />
+                                                    Date de fin
+                                                </label>
+                                                <Calendar
+                                                    size="small"
+                                                    className="w-full"
+                                                    value={task.endDate}
+                                                    onChange={(e) =>
+                                                        setTasks((prevTasks) =>
+                                                            prevTasks.map((t) =>
+                                                                t.id === task.id ? { ...t, endDate: e.value } : t
+                                                            )
+                                                        )
+                                                    }
+                                                    dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                                />
                                             </div>
                                         </div>
 
                                         <div className="grid grid-cols-2 gap-6 mt-4">
                                             <div className="flex flex-col space-y-3">
-                                                <label><i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>Priorité</label>
-                                                <Dropdown 
-                                                    value={selectedSeverity} 
-                                                    onChange={(e) => setSelectedSeverity(e.value)} 
-                                                    options={severities} 
-                                                    optionLabel="name" 
-                                                    optionValue="value" 
-                                                    placeholder="Sélectionner" 
-                                                    className="w-full" 
+                                                <label>
+                                                    <i className="pi pi-exclamation-circle text-indigo-400 mr-3" />
+                                                    Priorité
+                                                </label>
+                                                <Dropdown
+                                                    value={task.priority}
+                                                    onChange={(e) =>
+                                                        setTasks((prevTasks) =>
+                                                            prevTasks.map((t) =>
+                                                                t.id === task.id ? { ...t, priority: e.value } : t
+                                                            )
+                                                        )
+                                                    }
+                                                    options={severities}
+                                                    optionLabel="name"
+                                                    optionValue="value"
+                                                    placeholder="Sélectionner"
+                                                    className="w-full"
                                                 />
                                             </div>
                                             <div className="flex flex-col space-y-3">
-                                                <label><i className="pi pi-hourglass text-indigo-400 mr-3"/>État de la tâche</label>
-                                                <Dropdown 
-                                                    value={selectedStatus} 
-                                                    onChange={(e) => setSelectedStatus(e.value)} 
-                                                    options={taskStatuses} 
-                                                    optionLabel="name" 
-                                                    optionValue="value" 
-                                                    placeholder="Sélectionner" 
-                                                    className="w-full" 
+                                                <label>
+                                                    <i className="pi pi-hourglass text-indigo-400 mr-3" />
+                                                    État de la tâche
+                                                </label>
+                                                <Dropdown
+                                                    value={task.status}
+                                                    onChange={(e) =>
+                                                        setTasks((prevTasks) =>
+                                                            prevTasks.map((t) =>
+                                                                t.id === task.id ? { ...t, status: e.value } : t
+                                                            )
+                                                        )
+                                                    }
+                                                    options={taskStatuses}
+                                                    optionLabel="name"
+                                                    optionValue="value"
+                                                    placeholder="Sélectionner"
+                                                    className="w-full"
                                                 />
                                             </div>
                                         </div>
 
                                         <div className="flex flex-col space-y-3 mt-4">
-                                            <label><i className="pi pi-link text-indigo-400 mr-3"/>Pièces jointes</label>
-                                            <FileUpload 
-                                                mode="basic" 
-                                                name="demo[]" 
-                                                maxFileSize={1000000} 
-                                                chooseLabel="Choisir un fichier" 
+                                            <label>
+                                                <i className="pi pi-link text-indigo-400 mr-3" />
+                                                Pièces jointes
+                                            </label>
+                                            <FileUpload
+                                                mode="basic"
+                                                name="demo[]"
+                                                maxFileSize={1000000}
+                                                chooseLabel="Choisir un fichier"
                                             />
                                         </div>
                                     </div>
@@ -354,7 +670,8 @@ const CreatePlanning = () => {
                                     <div className="h-full flex flex-col justify-center items-center text-gray-400">
                                         <p>Tâche vide</p>
                                         <p className="text-center mt-4 text-sm">
-                                            Veuillez cliquer sur le bouton <strong>"Ajouter"</strong> pour remplir cette tâche.
+                                            Veuillez cliquer sur le bouton <strong>"Ajouter"</strong> pour remplir cette
+                                            tâche.
                                         </p>
                                     </div>
                                 )}
@@ -375,51 +692,40 @@ const CreatePlanning = () => {
 
                     <Dialog
                         header="Votre chronogramme"
-                        modal 
+                        modal
                         visible={submitted}
                         className="w-[36rem] !font-poppins"
-                        onHide={() => {if (!submitted) return; setSubmitted(false); }}
+                        onHide={() => {
+                            if (!submitted) return;
+                            setSubmitted(false);
+                        }}
                     >
                         <p>
-                        Vérifier votre chronogramme avant de le soumettre. Assurez-vous que toutes les informations sont correctes et complètes.
+                            Vérifier votre chronogramme avant de le soumettre. Assurez-vous que toutes les informations
+                            sont correctes et complètes.
                         </p>
 
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-8">
-                            <h5 className="text-indigo-500 font-semibold">
-                                Titre
-                            </h5>
-                            <p>
-                                Nouveau chronogramme 1
-                            </p>
+                            <h5 className="text-indigo-500 font-semibold">Titre</h5>
+                            <p>{title || "Nouveau chronogramme 1"}</p>
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
-                            <h5 className="text-indigo-500 font-semibold">
-                               Date de fin
-                            </h5>
-                            <p>
-                                09/06/2025
-                            </p>
+                            <h5 className="text-indigo-500 font-semibold">Date de fin</h5>
+                            <p>{endDate ? endDate.toLocaleDateString() : "09/06/2025"}</p>
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
-                            <h5 className="text-indigo-500 font-semibold">
-                               Date de début
-                            </h5>
-                            <p>
-                                09/06/2025
-                            </p>
+                            <h5 className="text-indigo-500 font-semibold">Date de début</h5>
+                            <p>{startDate ? startDate.toLocaleDateString() : "09/06/2025"}</p>
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
-                            <h5 className="text-indigo-500 font-semibold">
-                               Tâches
-                            </h5>
-                            <p>
-                                12
-                            </p>
+                            <h5 className="text-indigo-500 font-semibold">Tâches</h5>
+                            <p>{tasks.filter((t) => t.filled && t.title.trim()).length}</p>
                         </div>
 
                         <div className="mt-8 text-sm">
-                            <i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>
-                            Votre encadreur recevra ce chronogramme et pourra le modifier si nécessaire. Soyez sûr que toutes les informations sont correctes avant de le soumettre.
+                            <i className="pi pi-exclamation-circle text-indigo-400 mr-3" />
+                            Votre encadreur recevra ce chronogramme et pourra le modifier si nécessaire. Soyez sûr que
+                            toutes les informations sont correctes avant de le soumettre.
                         </div>
 
                         <Button
@@ -430,7 +736,7 @@ const CreatePlanning = () => {
                 </section>
             </form>
         </motion.div>
-    )
-}
+    );
+};
 
-export default CreatePlanning
+export default CreatePlanning;

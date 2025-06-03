@@ -33,10 +33,11 @@ const LayoutAdmin = () => {
     // Récupérer les données de l'utilisateur au chargement du composant
     useEffect(() => {
         fetchUserData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     if (loading) {
-        return <div>Chargement...</div>;
+        return <div></div>;
     }
 
     if (error) {
