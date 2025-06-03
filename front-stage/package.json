@@ -17,6 +17,8 @@
     "axios": "^1.9.0",
     "chart.js": "^4.4.9",
     "framer-motion": "^12.10.5",
+    "mammoth": "^1.9.1",
+    "pdfjs-dist": "^5.3.31",
     "primeicons": "^7.0.0",
     "primereact": "^10.9.5",
     "quill": "^2.0.3",
