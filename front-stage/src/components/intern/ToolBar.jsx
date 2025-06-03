@@ -52,7 +52,7 @@ const Toolbar = () => {
         {
             label: 'Ressources',
             icon: 'pi pi-folder',
-            command: () => navigate('/intern/ressources'),
+            command: () => navigate('/intern/resources'),
             className: location.pathname === '/intern/ressources' ? 'bg-indigo-200 text-white !important rounded-md' : 'hover:bg-gray-200',
         },
     ], [location.pathname, navigate]) 

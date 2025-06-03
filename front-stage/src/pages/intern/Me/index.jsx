@@ -3,12 +3,15 @@ import { Divider } from "primereact/divider"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
 import { motion } from "framer-motion"
+import { useNavigate } from "react-router-dom"
 
 import imgIntern from "../../../assets/images/img_profile_intern.jpg"
 import imgSupervisor from "../../../assets/images/img_profile_supervisor.png"
 import collaborator from "../../../assets/images/fake/intern2.png"
 
 const MyInternship = () => {
+    const navigate = useNavigate()
+
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
@@ -252,6 +255,8 @@ const MyInternship = () => {
                         <div className='mt-4'>
                             <DataTable
                                 value={projects}
+                                onRowClick={() => navigate('project')}
+                                className="!cursor-pointer"
                             >
                                 <Column 
                                     body={folderTemplate}
