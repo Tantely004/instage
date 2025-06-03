@@ -27,6 +27,7 @@ import Users from './pages/admin/users'
 import CreateUser from './pages/admin/users/Create'
 import FollowUpSupervisor from './pages/supervisor/FollowUp'
 import FollowUpAdmin from './pages/admin/FollowUp'
+import ProjectIntern from './pages/intern/Me/Project'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
@@ -95,6 +96,7 @@ function App() {
                   <Route index path="planning" element={<PlanningIndex />} />
                   <Route index path="planning/create" element={<CreatePlanning />} />
                   <Route index path="me" element={<MyInternship />} />
+                  <Route index path="me/project" element={<ProjectIntern />} />
                   <Route index path="profile" element={<ProfileIntern />} />
                 </Route>
 
