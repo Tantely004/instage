@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import Tesseract from "tesseract.js";
 import mammoth from "mammoth";
 import { getDocument } from "pdfjs-dist";
+import axios from "axios";
 
 const CreatePlanning = () => {
     const [submitted, setSubmitted] = useState(false);
@@ -34,8 +35,8 @@ const CreatePlanning = () => {
 
     const severities = [
         { name: "Urgent", value: "urgent" },
-        { name: "Secondaire", value: "secondary" },
-        { name: "Optionnel", value: "optional" },
+        { name: "Secondaire", value: "secondaire" },
+        { name: "Optionnel", value: "optionnel" },
     ];
 
     const taskStatuses = [
@@ -52,6 +53,15 @@ const CreatePlanning = () => {
     const descriptionRegex = /^(?:description|détail):\s*(.+)$/i;
     const taskRegex = /^(?:tâche|task):\s*(.+)$/i;
     const fileExtensionRegex = /\.([a-zA-Z0-9]+)$/;
+
+    // Fonction pour normaliser les chaînes (accents, espaces insécables, etc.)
+    const normalizeString = (str) => {
+        return str
+            .normalize("NFD") // Décomposer les caractères (ex: "é" devient "e" + accent)
+            .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
+            .replace(/\s+/g, " ") // Remplacer les espaces multiples par un seul espace
+            .trim(); // Supprimer les espaces en début et fin
+    };
 
     // Fonctions pour gérer les uploads par type de fichier
     const fileHandlers = {
@@ -192,8 +202,22 @@ const CreatePlanning = () => {
             }
 
             // Priorité de la tâche
-            if (currentTask && (match = trimmedLine.match(/^priorité:\s*(urgent|secondaire|optionnel)$/i))) {
-                currentTask.priority = match[1].toLowerCase();
+            if (currentTask && (match = trimmedLine.match(/^priorité:\s*(urgent|secondaire|optionnel)\s*$/i))) {
+                const priorityValue = match[1].toLowerCase();
+                console.log(`Priorité détectée: "${match[1]}" -> "${priorityValue}" pour la tâche "${currentTask.title}"`);
+                currentTask.priority = priorityValue;
+            } else if (currentTask && trimmedLine.toLowerCase().startsWith("priorité:")) {
+                // Normalisation pour gérer les accents et caractères spéciaux
+                const normalizedLine = normalizeString(trimmedLine);
+                console.log(`Ligne priorité non reconnue: "${trimmedLine}" (normalisée: "${normalizedLine}")`);
+                const normalizedMatch = normalizedLine.match(/^priorite:\s*(urgent|secondaire|optionnel)\s*$/i);
+                if (normalizedMatch) {
+                    const priorityValue = normalizedMatch[1].toLowerCase();
+                    console.log(`Priorité détectée après normalisation: "${normalizedMatch[1]}" -> "${priorityValue}" pour la tâche "${currentTask.title}"`);
+                    currentTask.priority = priorityValue;
+                } else {
+                    console.log(`Priorité toujours non reconnue après normalisation: "${normalizedLine}"`);
+                }
             }
 
             // État de la tâche
@@ -211,6 +235,12 @@ const CreatePlanning = () => {
             }
         });
 
+        // Journalisation pour vérifier les tâches détectées
+        console.log("Tâches détectées:", JSON.stringify(data.tasks, null, 2));
+
+        // Mettre à journalisation des tâches avant la mise à jour
+        console.log("État des tâches avant mise à jour:", JSON.stringify(tasks, null, 2));
+
         // Mettre à jour les états globaux
         setTitle(data.title);
         setStartDate(data.startDate || null);
@@ -220,7 +250,7 @@ const CreatePlanning = () => {
         // Mettre à jour les tâches
         const updatedTasks = tasks.map((task, index) => {
             if (index < data.tasks.length && task.filled) {
-                return {
+                const updatedTask = {
                     ...task,
                     title: data.tasks[index].title || task.title,
                     detail: data.tasks[index].detail || task.detail,
@@ -229,10 +259,15 @@ const CreatePlanning = () => {
                     priority: data.tasks[index].priority || task.priority,
                     status: data.tasks[index].status || task.status,
                 };
+                console.log(`Tâche ${task.id} mise à jour:`, JSON.stringify(updatedTask, null, 2));
+                return updatedTask;
             }
             return task;
         });
         setTasks(updatedTasks);
+
+        // Journalisation pour vérifier l'état final des tâches
+        console.log("État final des tâches après mise à jour:", JSON.stringify(updatedTasks, null, 2));
 
         toast.current.show({
             severity: "info",
@@ -269,23 +304,104 @@ const CreatePlanning = () => {
         );
     };
 
-    const handleSavePlanning = () => {
-        const hasEmptyTitles = tasks.some((task) => task.filled && !task.title.trim());
-        if (hasEmptyTitles) {
+    const handleSavePlanning = async () => {
+        // Validation des champs obligatoires
+        if (!title.trim()) {
             toast.current.show({
                 severity: "error",
                 summary: "Erreur",
-                detail: "Veuillez remplir tous les titres des tâches.",
+                detail: "Veuillez remplir le titre du chronogramme.",
                 life: 3000,
             });
             return;
         }
-        toast.current.show({
-            severity: "success",
-            summary: "Enregistré",
-            detail: "Le chronogramme a été enregistré avec succès.",
-            life: 3000,
-        });
+
+        if (!startDate || !endDate) {
+            toast.current.show({
+                severity: "error",
+                summary: "Erreur",
+                detail: "Veuillez remplir les dates de début et de fin.",
+                life: 3000,
+            });
+            return;
+        }
+
+        // Formatter les dates en AAAA-MM-JJ
+        const formatDate = (date) => {
+            const year = date.getFullYear();
+            const month = String(date.getMonth() + 1).padStart(2, "0");
+            const day = String(date.getDate()).padStart(2, "0");
+            return `${year}-${month}-${day}`;
+        };
+
+        // Étape 1 : Uploader le fichier s'il existe
+        let documentId = null;
+        if (files.length > 0) {
+            const file = files[0]; // On prend le premier fichier uploadé
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("name", file.name);
+            const match = file.name.match(fileExtensionRegex);
+            const extension = match ? match[1].toLowerCase() : "unknown";
+            formData.append("type", extension);
+
+            try {
+                const response = await axios.post("/api/documents/", formData, {
+                    headers: {
+                        "Content-Type": "multipart/form-data",
+                    },
+                });
+                documentId = response.data.id; // Récupérer l'ID du document créé
+                toast.current.show({
+                    severity: "info",
+                    summary: "Fichier uploadé",
+                    detail: "Le fichier a été uploadé avec succès.",
+                    life: 3000,
+                });
+            } catch (error) {
+                toast.current.show({
+                    severity: "error",
+                    summary: "Erreur d'upload",
+                    detail: `Erreur lors de l'upload du fichier: ${error.message}`,
+                    life: 3000,
+                });
+                return;
+            }
+        }
+
+        // Étape 2 : Créer le Planning
+        const planningData = {
+            title: title,
+            project: 1, // Projet par défaut (id=1), à ajuster selon ton backend
+            description: description || null,
+            start_date: formatDate(startDate),
+            end_date: formatDate(endDate),
+        };
+
+        try {
+            const response = await axios.post("/api/plannings/", planningData);
+            toast.current.show({
+                severity: "success",
+                summary: "Enregistré",
+                detail: "Le chronogramme a été enregistré avec succès.",
+                life: 3000,
+            });
+
+            // Redirection ou réinitialisation des champs après succès
+            setTitle("");
+            setStartDate(null);
+            setEndDate(null);
+            setDescription("");
+            setFiles([]);
+            navigate("/intern/planning"); // Redirection vers la liste des plannings
+        } catch (error) {
+            toast.current.show({
+                severity: "error",
+                summary: "Erreur",
+                detail: `Erreur lors de l'enregistrement: ${error.response?.data?.detail || error.message}`,
+                life: 3000,
+            });
+        }
     };
 
     const items = [
@@ -423,7 +539,7 @@ const CreatePlanning = () => {
                                         className="w-full"
                                         value={startDate}
                                         onChange={(e) => setStartDate(e.value)}
-                                        dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                        dateFormat="yy-mm-dd"
                                     />
                                 </div>
                                 <div className="flex flex-col space-y-3">
@@ -436,7 +552,7 @@ const CreatePlanning = () => {
                                         className="w-full"
                                         value={endDate}
                                         onChange={(e) => setEndDate(e.value)}
-                                        dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                        dateFormat="yy-mm-dd"
                                     />
                                 </div>
                             </div>
@@ -584,7 +700,7 @@ const CreatePlanning = () => {
                                                             )
                                                         )
                                                     }
-                                                    dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                                    dateFormat="yy-mm-dd"
                                                 />
                                             </div>
                                             <div className="flex flex-col space-y-3">
@@ -603,7 +719,7 @@ const CreatePlanning = () => {
                                                             )
                                                         )
                                                     }
-                                                    dateFormat="yy-mm-dd" // Forcer le format AAAA-MM-JJ
+                                                    dateFormat="yy-mm-dd"
                                                 />
                                             </div>
                                         </div>
