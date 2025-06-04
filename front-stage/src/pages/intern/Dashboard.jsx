@@ -1,13 +1,27 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { Button } from "primereact/button"
 import { Chart } from 'primereact/chart'
 import { Dropdown } from 'primereact/dropdown'
+import { Dialog } from 'primereact/dialog'
+import { InputTextarea } from "primereact/inputtextarea"
+import { ProgressSpinner } from 'primereact/progressspinner'
+import { Card } from 'primereact/card'
+import { ScrollPanel } from 'primereact/scrollpanel'
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
 
 import student from "../../assets/images/student.png"
 
 const DashboardIntern = () => {
+    const [themeDialog, setThemeDialog] = useState(false)
+    const [loadingDialog, setLoadingDialog] = useState(false)
+    const [resultsDialog, setResultsDialog] = useState(false)
+    const [generatedThemes, setGeneratedThemes] = useState([])
+    const [selectedTheme, setSelectedTheme] = useState(null)
+    const [promptText, setPromptText] = useState('')
+    const [uploadedFiles, setUploadedFiles] = useState([])
+    const fileInputRef = useRef(null)
+
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
@@ -103,7 +117,67 @@ const DashboardIntern = () => {
             room: '201',
             reason: ["Suivi évaluation", "Correction livrables"],
         }
-    ];
+    ]
+
+    const simulateThemeGeneration = () => {
+        setThemeDialog(false)
+        setLoadingDialog(true)
+        setGeneratedThemes([])
+        setSelectedTheme(null)
+        
+        setTimeout(() => {
+            const mockThemes = [
+                { id: 1, title: "Optimisation des Processus de Gestion de Projet", description: "Un thème axé sur l'amélioration de l'efficacité des workflows de projet à travers des méthodologies agiles." },
+                { id: 2, title: "Analyse de Données pour la Prise de Décision", description: "Exploration des techniques d'analyse de données pour optimiser les décisions stratégiques." },
+                { id: 3, title: "Développement Durable dans les Projets IT", description: "Intégration de pratiques écoresponsables dans la gestion et l'exécution des projets informatiques." }
+            ]
+            setGeneratedThemes(mockThemes)
+            setLoadingDialog(false)
+            setResultsDialog(true)
+        }, 2000)
+    }
+
+    const handleGenerate = () => {
+        if (promptText.trim()) {
+            simulateThemeGeneration()
+            setPromptText('')
+        }
+    }
+
+    const handleSelectTheme = (theme) => {
+        setSelectedTheme(theme)
+    }
+
+    const handleValidateTheme = () => {
+        if (selectedTheme) {
+            setResultsDialog(false)
+        }
+    }
+
+    const handleFileUpload = (event) => {
+        const files = Array.from(event.target.files)
+        const validFiles = files.filter(file => {
+            const extension = file.name.split('.').pop().toLowerCase()
+            const isValidType = ['pdf', 'doc', 'docx'].includes(extension)
+            const isValidSize = file.size <= 10000000
+            return isValidType && isValidSize
+        })
+
+        if (validFiles.length < files.length) {
+            alert('Certains fichiers ont été ignorés : seuls les fichiers .pdf, .doc, .docx de moins de 10 Mo sont acceptés.')
+        }
+
+        setUploadedFiles(prev => [...prev, ...validFiles])
+        event.target.value = null
+    }
+
+    const handleRemoveFile = (file) => {
+        setUploadedFiles(prev => prev.filter(f => f !== file))
+    }
+
+    const triggerFileInput = () => {
+        fileInputRef.current.click()
+    }
 
     return (
         <motion.div
@@ -129,7 +203,140 @@ const DashboardIntern = () => {
 
                         <Button
                             label="Générer un thème"
+                            onClick={() => setThemeDialog(true)}
                         />
+
+                        <Dialog
+                            visible={themeDialog}
+                            header="Génerer votre thème"
+                            headerClassName='!font-poppins !text-indigo-500'
+                            onHide={() => {if (!themeDialog) return; setThemeDialog(false)}}
+                            className='!w-[55rem] !h-[75vh] !font-poppins'
+                        >
+                            <section className='grid grid-cols-3 gap-8'>
+                                <div className='col-span-2'>
+                                    <InputTextarea 
+                                        placeholder="Entrez votre prompt ici, de préférence au moins 500 mots pour de meilleurs résultats. Assurez également d'inclure les mots clés relatifs à votre projet/stage"
+                                        className='!w-full !text-sm !font-poppins'
+                                        rows={12}
+                                        value={promptText}
+                                        onChange={(e) => setPromptText(e.target.value)}
+                                    />
+                                </div>
+
+                                <div className='flex flex-col'>
+                                    <div className='flex justify-between items-center mb-4'>
+                                        <h4 className="font-semibold text-lg text-gray-500">
+                                            <i className="pi pi-paperclip mr-2"/> Pièces jointes
+                                        </h4>
+                                        <i 
+                                            className='pi pi-plus cursor-pointer text-indigo-400'
+                                            title="Ajouter"
+                                            onClick={triggerFileInput}
+                                        />
+                                        <input
+                                            type="file"
+                                            ref={fileInputRef}
+                                            accept=".pdf,.doc,.docx"
+                                            multiple
+                                            style={{ display: 'none' }}
+                                            onChange={handleFileUpload}
+                                        />
+                                    </div>
+
+                                    <ScrollPanel style={{height: 'calc(100% - 2rem)'}}>
+                                        {uploadedFiles.length > 0 ? (
+                                            <div className='space-y-2'>
+                                                {uploadedFiles.map((file, index) => (
+                                                    <div key={index} className='flex justify-between items-center bg-gray-100 p-2 rounded-md'>
+                                                        <span className='text-sm text-gray-600'>{file.name}</span>
+                                                        <i 
+                                                            className='pi pi-times cursor-pointer text-indigo-400'
+                                                            title="Supprimer"
+                                                            onClick={() => handleRemoveFile(file)}
+                                                        />
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        ) : (
+                                            <p className="mt-8 text-center font-poppins text-sm text-gray-400">
+                                                Aucun fichier pour le moment
+                                            </p>
+                                        )}
+                                    </ScrollPanel>
+                                </div>
+                            </section>
+
+                            <section className='mt-10 flex justify-between items-center'>
+                                <Button
+                                    icon="pi pi-question-circle"
+                                    label='Comment ça fonctionne'
+                                    className='!border-none !bg-transparent !font-poppins !text-xs !text-indigo-500 !p-0'
+                                />
+
+                                <Button
+                                    icon="pi pi-sparkles" 
+                                    label='Générer'
+                                    className='!h-10'
+                                    onClick={handleGenerate}
+                                    disabled={!promptText.trim()}
+                                />
+                            </section>
+                        </Dialog>
+
+                        <Dialog
+                            visible={loadingDialog}
+                            header="Génération en cours"
+                            headerClassName='!font-poppins !text-indigo-500'
+                            onHide={() => {}}
+                            className='!w-[30rem] !h-[20rem] !font-poppins'
+                            closable={false}
+                        >
+                            <div className='flex flex-col items-center justify-center h-full'>
+                                <ProgressSpinner style={{width: '50px', height: '50px'}} />
+                                <p className='mt-4 text-gray-500'>Génération des thèmes en cours...</p>
+                            </div>
+                        </Dialog>
+
+                        <Dialog
+                            visible={resultsDialog}
+                            header="Thèmes proposés"
+                            headerClassName='!font-poppins !text-indigo-500'
+                            onHide={() => {if (!resultsDialog) return; setResultsDialog(false)}}
+                            className='!w-[55rem] !h-[75vh] !font-poppins'
+                        >
+                            <ScrollPanel style={{height: 'calc(100% - 8rem)'}}>
+                                <div className='space-y-4 p-4'>
+                                    {generatedThemes.map(theme => (
+                                        <Card
+                                            key={theme.id}
+                                            className={`!font-poppins cursor-pointer transition-shadow ${selectedTheme?.id === theme.id ? 'border-2 border-indigo-400 shadow-md' : 'border border-gray-200 hover:shadow-md'}`}
+                                            onClick={() => handleSelectTheme(theme)}
+                                        >
+                                            <h5 className='font-semibold text-indigo-500'>{theme.title}</h5>
+                                            <p className='text-sm text-gray-600 mt-2'>{theme.description}</p>
+                                        </Card>
+                                    ))}
+                                </div>
+                            </ScrollPanel>
+
+                            <section className='mt-6 flex justify-between items-center p-4'>
+                                <Button
+                                    icon="pi pi-undo"
+                                    label='Régénérer'
+                                    className='!h-10'
+                                    onClick={handleGenerate}
+                                    disabled={!promptText.trim()}
+                                />
+                                <Button
+                                    icon="pi pi-check"
+                                    label='Valider'
+                                    className='!h-10'
+                                    disabled={!selectedTheme}
+                                    onClick={handleValidateTheme}
+                                />
+                            </section>
+                        </Dialog>
                     </div>
                     
                     <div className="">
