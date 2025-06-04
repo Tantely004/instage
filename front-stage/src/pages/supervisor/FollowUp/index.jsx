@@ -162,7 +162,7 @@ const FollowUpSupervisor = () => {
             exit="out"
             variants={pageVariants}
             transition={pageTransition} 
-            className={`mb-12 w-[75.5vw]`}
+            className={`mb-12 max-w-[89vw]`}
         >
             <h1 className='font-bold text-2xl text-indigo-400'>
                 Suivi
