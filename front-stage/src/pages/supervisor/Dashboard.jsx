@@ -114,7 +114,7 @@ const DashboardSupervisor = ({isDarkMode}) => {
             exit="out"
             variants={pageVariants}
             transition={pageTransition} 
-            className={`mb-12`}
+            className={`mb-12 max-w-[89vw]`}
         >
             <section className="grid grid-cols-4 gap-8 items-center">
                 <div className="bg-indigo-400 dark:!bg-indigo-500 text-white p-4 rounded-lg flex items-center space-x-4">

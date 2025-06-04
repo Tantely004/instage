@@ -17,6 +17,7 @@ import MyInternship from './pages/intern/Me'
 import CreatePlanning from './pages/intern/Planning/Create'
 import ProfileSupervisor from './pages/supervisor/Profile'
 import FollowUpSupervisor from './pages/supervisor/FollowUp'
+import ResourcesSupervisor from './pages/supervisor/Resources'
 
 function App() {
       // eslint-disable-next-line no-unused-vars
@@ -79,6 +80,7 @@ function App() {
                     <Route index path="dashboard" element={<DashboardSupervisor />} />
                     <Route index path="follow-up" element={<FollowUpSupervisor />} />
                     <Route index path="profile" element={<ProfileSupervisor />} />
+                    <Route index path="resources" element={<ResourcesSupervisor />} />
                 </Route>
 
                 <Route path="/admin" element={<LayoutAdmin />}>
