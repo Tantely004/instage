@@ -9,4 +9,5 @@ urlpatterns = [
     path('dashboard/admin/', DashboardAdminAPIView.as_view(), name='dashboard-admin'),
     path('profile/intern/', ProfileInternAPIView.as_view(), name='profile-intern'),
     path('toolbar/', ToolbarDetailAPIView.as_view(), name='toolbar-detail'),
+    path('generationtheme/', GenerationThemeAPIView.as_view(), name='generation-theme'),
 ]

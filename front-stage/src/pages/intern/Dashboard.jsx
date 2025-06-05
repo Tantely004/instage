@@ -1,27 +1,28 @@
-import { useState, useEffect, useRef } from 'react'
-import { Button } from "primereact/button"
-import { Chart } from 'primereact/chart'
-import { Dropdown } from 'primereact/dropdown'
-import { Dialog } from 'primereact/dialog'
-import { InputTextarea } from "primereact/inputtextarea"
-import { ProgressSpinner } from 'primereact/progressspinner'
-import { Card } from 'primereact/card'
-import { ScrollPanel } from 'primereact/scrollpanel'
+import { useState, useEffect, useRef } from 'react';
+import { Button } from "primereact/button";
+import { Chart } from 'primereact/chart';
+import { Dropdown } from 'primereact/dropdown';
+import { Dialog } from 'primereact/dialog';
+import { InputTextarea } from "primereact/inputtextarea";
+import { ProgressSpinner } from 'primereact/progressspinner';
+import { Card } from 'primereact/card';
+import { ScrollPanel } from 'primereact/scrollpanel';
 // eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion"
+import { motion } from "framer-motion";
+import * as pdfjsLib from 'pdfjs-dist'; // Import de pdf.js
 
-import student from "../../assets/images/student.png"
-import useReport from '../../composables/useReport'
+import student from "../../assets/images/student.png";
+import useReport from '../../composables/useReport';
 
 const DashboardIntern = () => {
-    const [themeDialog, setThemeDialog] = useState(false)
-    const [loadingDialog, setLoadingDialog] = useState(false)
-    const [resultsDialog, setResultsDialog] = useState(false)
-    const [generatedThemes, setGeneratedThemes] = useState([])
-    const [selectedTheme, setSelectedTheme] = useState(null)
-    const [promptText, setPromptText] = useState('')
-    const [uploadedFiles, setUploadedFiles] = useState([])
-    const fileInputRef = useRef(null)
+    const [themeDialog, setThemeDialog] = useState(false);
+    const [loadingDialog, setLoadingDialog] = useState(false);
+    const [resultsDialog, setResultsDialog] = useState(false);
+    const [generatedThemes, setGeneratedThemes] = useState([]);
+    const [selectedTheme, setSelectedTheme] = useState(null);
+    const [promptText, setPromptText] = useState('');
+    const [uploadedFiles, setUploadedFiles] = useState([]);
+    const fileInputRef = useRef(null);
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -29,74 +30,122 @@ const DashboardIntern = () => {
         out: { opacity: 0, y: -5 },
     };
 
-    const pageTransition = { duration: 0.5 }
+    const pageTransition = { duration: 0.5 };
 
-    const { fetchDashboardData, dashboardData, loading, error } = useReport()
-    const [selectedPeriod, setSelectedPeriod] = useState('weekly')
+    const { fetchDashboardData, dashboardData, loading, error } = useReport();
+    const [selectedPeriod, setSelectedPeriod] = useState('weekly');
     const periods = [
         { name: 'Hebdomadaire', value: 'weekly' },
         { name: 'Mensuel', value: 'monthly' },
-    ]
+    ];
 
-    const simulateThemeGeneration = () => {
-        setThemeDialog(false)
-        setLoadingDialog(true)
-        setGeneratedThemes([])
-        setSelectedTheme(null)
-        
-        setTimeout(() => {
-            const mockThemes = [
-                { id: 1, title: "Optimisation des Processus de Gestion de Projet", description: "Un thème axé sur l'amélioration de l'efficacité des workflows de projet à travers des méthodologies agiles." },
-                { id: 2, title: "Analyse de Données pour la Prise de Décision", description: "Exploration des techniques d'analyse de données pour optimiser les décisions stratégiques." },
-                { id: 3, title: "Développement Durable dans les Projets IT", description: "Intégration de pratiques écoresponsables dans la gestion et l'exécution des projets informatiques." }
-            ]
-            setGeneratedThemes(mockThemes)
-            setLoadingDialog(false)
-            setResultsDialog(true)
-        }, 2000)
-    }
+    // Fonction pour extraire le texte d'un PDF avec pdf.js
+    const extractTextFromPDF = async (file) => {
+        try {
+            const arrayBuffer = await file.arrayBuffer();
+            const pdf = await pdfjsLib.getDocument(arrayBuffer).promise;
+            let text = '';
+            for (let i = 1; i <= pdf.numPages; i++) {
+                const page = await pdf.getPage(i);
+                const content = await page.getTextContent();
+                text += content.items.map(item => item.str).join(' ') + '\n';
+            }
+            return text;
+        } catch (error) {
+            console.error('Erreur lors de l\'extraction du texte du PDF:', error);
+            return '';
+        }
+    };
+
+    // Fonction pour générer les thèmes via l'API Django
+    const generateThemes = async () => {
+        try {
+            setThemeDialog(false);
+            setLoadingDialog(true);
+            setGeneratedThemes([]);
+            setSelectedTheme(null);
+
+            // Extraire le texte des fichiers PDF
+            const fileContents = await Promise.all(
+                uploadedFiles.map(file => extractTextFromPDF(file))
+            );
+            const combinedFileContent = fileContents.join('\n');
+
+            // Récupérer le token JWT depuis le localStorage
+            const token = localStorage.getItem('access_token');
+            if (!token) {
+                throw new Error('Utilisateur non authentifié. Veuillez vous connecter.');
+            }
+
+            // Appeler l'API Django
+            const response = await fetch('http://localhost:8000/api/generationtheme/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`,
+                },
+                body: JSON.stringify({
+                    prompt: promptText,
+                    file_content: combinedFileContent,
+                }),
+            });
+
+            if (!response.ok) {
+                throw new Error('Erreur lors de la génération des thèmes.');
+            }
+
+            const data = await response.json();
+            setGeneratedThemes(data.themes || []);
+            setLoadingDialog(false);
+            setResultsDialog(true);
+            setPromptText('');
+            setUploadedFiles([]);
+        } catch (error) {
+            setLoadingDialog(false);
+            alert(error.message);
+        }
+    };
 
     const handleGenerate = () => {
         if (promptText.trim()) {
-            simulateThemeGeneration()
-            setPromptText('')
+            generateThemes();
         }
-    }
+    };
 
     const handleSelectTheme = (theme) => {
-        setSelectedTheme(theme)
-    }
+        setSelectedTheme(theme);
+    };
 
     const handleValidateTheme = () => {
         if (selectedTheme) {
-            setResultsDialog(false)
+            setResultsDialog(false);
         }
-    }
+    };
 
     const handleFileUpload = (event) => {
-        const files = Array.from(event.target.files)
+        const files = Array.from(event.target.files);
         const validFiles = files.filter(file => {
-            const extension = file.name.split('.').pop().toLowerCase()
-            const isValidType = ['pdf', 'doc', 'docx'].includes(extension)
-            const isValidSize = file.size <= 10000000
-            return isValidType && isValidSize
-        })
+            const extension = file.name.split('.').pop().toLowerCase();
+            const isValidType = ['pdf', 'doc', 'docx'].includes(extension);
+            const isValidSize = file.size <= 10000000;
+            return isValidType && isValidSize;
+        });
 
         if (validFiles.length < files.length) {
-            alert('Certains fichiers ont été ignorés : seuls les fichiers .pdf, .doc, .docx de moins de 10 Mo sont acceptés.')
+            alert('Certains fichiers ont été ignorés : seuls les fichiers .pdf, .doc, .docx de moins de 10 Mo sont acceptés.');
         }
 
-        setUploadedFiles(prev => [...prev, ...validFiles])
-        event.target.value = null
-    }
+        setUploadedFiles(prev => [...prev, ...validFiles]);
+        event.target.value = null;
+    };
 
     const handleRemoveFile = (file) => {
-        setUploadedFiles(prev => prev.filter(f => f !== file))
-    }
+        setUploadedFiles(prev => prev.filter(f => f !== file));
+    };
 
     const triggerFileInput = () => {
-        fileInputRef.current.click()
-    }
+        fileInputRef.current.click();
+    };
 
     const [chartData, setChartData] = useState({});
     const [chartOptions, setChartOptions] = useState({});
@@ -104,18 +153,18 @@ const DashboardIntern = () => {
     useEffect(() => {
         fetchDashboardData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [])
+    }, []);
 
     useEffect(() => {
         if (dashboardData && dashboardData.statistics) {
-            const documentStyle = getComputedStyle(document.documentElement)
-            const textColor = documentStyle.getPropertyValue('--text-color')
-            const textColorSecondary = documentStyle.getPropertyValue('--text-color-secondary')
-            const surfaceBorder = documentStyle.getPropertyValue('--surface-border')
+            const documentStyle = getComputedStyle(document.documentElement);
+            const textColor = documentStyle.getPropertyValue('--text-color');
+            const textColorSecondary = documentStyle.getPropertyValue('--text-color-secondary');
+            const surfaceBorder = documentStyle.getPropertyValue('--surface-border');
 
             const labels = selectedPeriod === 'weekly'
                 ? ['Sem 1', 'Sem 2', 'Sem 3', 'Sem 4']
-                : ['Mois 1', 'Mois 2', 'Mois 3', 'Mois 4', 'Mois 5', 'Mois 6', 'Mois 7', 'Mois 8', 'Mois 9', 'Mois 10', 'Mois 11', 'Mois 12']
+                : ['Mois 1', 'Mois 2', 'Mois 3', 'Mois 4', 'Mois 5', 'Mois 6', 'Mois 7', 'Mois 8', 'Mois 9', 'Mois 10', 'Mois 11', 'Mois 12'];
 
             const data = {
                 labels: labels,
@@ -133,7 +182,7 @@ const DashboardIntern = () => {
                         data: dashboardData.statistics.document[selectedPeriod],
                     },
                 ],
-            }
+            };
 
             const options = {
                 maintainAspectRatio: false,
@@ -168,33 +217,33 @@ const DashboardIntern = () => {
                         },
                     },
                 },
-            }
+            };
 
-            setChartData(data)
-            setChartOptions(options)
+            setChartData(data);
+            setChartOptions(options);
         }
-    }, [dashboardData, selectedPeriod])
+    }, [dashboardData, selectedPeriod]);
 
     if (loading) {
-        return <div></div>
+        return <div></div>;
     }
 
     if (error) {
-        return <div className="text-red-600 text-center">{error}</div>
+        return <div className="text-red-600 text-center">{error}</div>;
     }
 
     if (!dashboardData) {
-        return <div></div>
+        return <div></div>;
     }
 
-    const user = JSON.parse(localStorage.getItem('user'))
-    const today = new Date()
+    const user = JSON.parse(localStorage.getItem('user'));
+    const today = new Date();
 
     const upcomingSupervisions = dashboardData.supervisions.filter((supervision) => {
-        const interview = supervision.report.interview
-        const interviewDateTime = new Date(`${interview.date}T${interview.time}`)
-        return interviewDateTime >= today
-    })
+        const interview = supervision.report.interview;
+        const interviewDateTime = new Date(`${interview.date}T${interview.time}`);
+        return interviewDateTime >= today;
+    });
 
     return (
         <motion.div
@@ -458,7 +507,7 @@ const DashboardIntern = () => {
                                             ))}
                                         </ul>
                                     </div>
-                                )
+                                );
                             })
                         ) : (
                             <p className="text-gray-500 text-sm">
@@ -469,7 +518,7 @@ const DashboardIntern = () => {
                 </section>
             </div>
         </motion.div>
-    )
-}
+    );
+};
 
-export default DashboardIntern
+export default DashboardIntern;

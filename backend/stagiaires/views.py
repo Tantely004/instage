@@ -8,6 +8,8 @@ from rest_framework.permissions import IsAuthenticated
 from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib.auth import get_user_model
+import requests
+from decouple import config # type: ignore
 
 class LoginAPIView(TokenObtainPairView):
     def post(self, request, *args, **kwargs):
@@ -161,7 +163,9 @@ class DashboardInternAPIView(APIView):
                     weekly_tasks[2] += 1
                 elif days_diff < 28:
                     weekly_tasks[3] += 1
-                month_index = (12 + task.completed_date.month - today.month) % 12
+                month_index = (12 + task.completed_date.month - today.month
+
+) % 12
                 monthly_tasks[month_index] += 1
 
         # Statistiques pour document
@@ -436,5 +440,107 @@ class ToolbarDetailAPIView(APIView):
         except Exception as e:
             return Response(
                 {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class GenerationThemeAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            # Récupérer le prompt et le contenu des fichiers depuis la requête
+            prompt_text = request.data.get('prompt', '')
+            file_content = request.data.get('file_content', '')
+
+            if not prompt_text:
+                return Response(
+                    {"message": "Le prompt est requis."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            # Construire le prompt complet
+            full_prompt = f"""
+                Générez des thèmes de stage adaptés en fonction des informations suivantes :
+                Prompt utilisateur : {prompt_text}
+                Contenu des fichiers (CV ou autres) : {file_content}
+                Proposez 2 à 3 thèmes avec un titre et une description au format suivant :
+                ### Titre 1
+                Description 1
+                ### Titre 2
+                Description 2
+                ### Titre 3
+                Description 3
+            """
+
+            # Récupérer la clé API depuis .env
+            api_key = config('GEMINI_API_KEY')
+            url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
+
+            # Envoyer la requête à Gemini API
+            print(f"Prompt envoyé : {full_prompt}")  # Débogage
+            response = requests.post(
+                url,
+                json={
+                    "contents": [
+                        {
+                            "parts": [
+                                {"text": full_prompt}
+                            ]
+                        }
+                    ]
+                },
+                headers={
+                    "Content-Type": "application/json"
+                }
+            )
+            print(f"Réponse brute de Gemini : {response.text}")  # Débogage
+
+            # Vérifier si la requête a réussi
+            if response.status_code != 200:
+                return Response(
+                    {"message": "Erreur lors de la communication avec Gemini API."},
+                    status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                )
+
+            # Extraire la réponse
+            response_data = response.json()
+            generated_text = response_data.get('candidates', [{}])[0].get('content', {}).get('parts', [{}])[0].get('text', '')
+
+            # Parser les thèmes générés
+            themes = []
+            lines = generated_text.split('\n')
+            current_title = None
+            current_description = []
+
+            for line in lines:
+                line = line.strip()
+                if line.startswith('### '):
+                    if current_title and current_description:
+                        themes.append({
+                            "id": len(themes) + 1,
+                            "title": current_title,
+                            "description": ' '.join(current_description).strip()
+                        })
+                    current_title = line.replace('### ', '').strip()
+                    current_description = []
+                elif line and current_title:
+                    current_description.append(line)
+
+            # Ajouter le dernier thème si existe
+            if current_title and current_description:
+                themes.append({
+                    "id": len(themes) + 1,
+                    "title": current_title,
+                    "description": ' '.join(current_description).strip()
+                })
+
+            return Response(
+                {"themes": themes},
+                status=status.HTTP_200_OK
+            )
+
+        except Exception as e:
+            return Response(
+                {"message": f"Erreur lors de la génération des thèmes : {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
