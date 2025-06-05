@@ -3,8 +3,11 @@ import { motion } from 'framer-motion'
 import { DataTable } from 'primereact/datatable'
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
+import { useNavigate } from "react-router-dom"
 
 const FollowUpSupervisor = () => {
+    const navigate = useNavigate()
+
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
@@ -234,6 +237,8 @@ const FollowUpSupervisor = () => {
                         <div className='mt-4'>
                             <DataTable
                                 value={projects}
+                                onRowClick={() => navigate('/supervisor/follow-up/project')}
+                                className='!cursor-pointer'
                             >
                                 <Column 
                                     body={folderTemplate}
