@@ -19,8 +19,6 @@ import axios from "axios";
 
 const CreatePlanning = () => {
     const [submitted, setSubmitted] = useState(false);
-    const [selectedSeverity, setSelectedSeverity] = useState(null);
-    const [selectedStatus, setSelectedStatus] = useState(null);
     const [tasks, setTasks] = useState([
         { id: 1, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
         { id: 2, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
@@ -34,15 +32,15 @@ const CreatePlanning = () => {
     const navigate = useNavigate();
 
     const severities = [
-        { name: "Urgent", value: "urgent" },
-        { name: "Secondaire", value: "secondaire" },
-        { name: "Optionnel", value: "optionnel" },
+        { name: "Urgent", value: "high" },
+        { name: "Secondaire", value: "medium" },
+        { name: "Optionnel", value: "low" },
     ];
 
     const taskStatuses = [
-        { name: "À faire", value: "todo" },
-        { name: "En cours", value: "in-progress" },
-        { name: "Terminé", value: "done" },
+        { name: "À faire", value: "open" },
+        { name: "En cours", value: "progressing" },
+        { name: "Terminé", value: "completed" },
         { name: "Annulé", value: "cancelled" },
     ];
 
@@ -57,10 +55,10 @@ const CreatePlanning = () => {
     // Fonction pour normaliser les chaînes (accents, espaces insécables, etc.)
     const normalizeString = (str) => {
         return str
-            .normalize("NFD") // Décomposer les caractères (ex: "é" devient "e" + accent)
-            .replace(/[\u0300-\u036f]/g, "") // Supprimer les accents
-            .replace(/\s+/g, " ") // Remplacer les espaces multiples par un seul espace
-            .trim(); // Supprimer les espaces en début et fin
+            .normalize("NFD")
+            .replace(/[\u0300-\u036f]/g, "")
+            .replace(/\s+/g, " ")
+            .trim();
     };
 
     // Fonctions pour gérer les uploads par type de fichier
@@ -203,20 +201,26 @@ const CreatePlanning = () => {
 
             // Priorité de la tâche
             if (currentTask && (match = trimmedLine.match(/^priorité:\s*(urgent|secondaire|optionnel)\s*$/i))) {
-                const priorityValue = match[1].toLowerCase();
-                console.log(`Priorité détectée: "${match[1]}" -> "${priorityValue}" pour la tâche "${currentTask.title}"`);
-                currentTask.priority = priorityValue;
+                const priorityText = match[1].toLowerCase();
+                if (priorityText === "urgent") {
+                    currentTask.priority = "high";
+                } else if (priorityText === "secondaire") {
+                    currentTask.priority = "medium";
+                } else if (priorityText === "optionnel") {
+                    currentTask.priority = "low";
+                }
             } else if (currentTask && trimmedLine.toLowerCase().startsWith("priorité:")) {
-                // Normalisation pour gérer les accents et caractères spéciaux
                 const normalizedLine = normalizeString(trimmedLine);
-                console.log(`Ligne priorité non reconnue: "${trimmedLine}" (normalisée: "${normalizedLine}")`);
                 const normalizedMatch = normalizedLine.match(/^priorite:\s*(urgent|secondaire|optionnel)\s*$/i);
                 if (normalizedMatch) {
-                    const priorityValue = normalizedMatch[1].toLowerCase();
-                    console.log(`Priorité détectée après normalisation: "${normalizedMatch[1]}" -> "${priorityValue}" pour la tâche "${currentTask.title}"`);
-                    currentTask.priority = priorityValue;
-                } else {
-                    console.log(`Priorité toujours non reconnue après normalisation: "${normalizedLine}"`);
+                    const priorityText = normalizedMatch[1].toLowerCase();
+                    if (priorityText === "urgent") {
+                        currentTask.priority = "high";
+                    } else if (priorityText === "secondaire") {
+                        currentTask.priority = "medium";
+                    } else if (priorityText === "optionnel") {
+                        currentTask.priority = "low";
+                    }
                 }
             }
 
@@ -224,22 +228,16 @@ const CreatePlanning = () => {
             if (currentTask && (match = trimmedLine.match(/^état de la tâche:\s*(à faire|en cours|terminé|annulé)$/i))) {
                 const statusText = match[1].toLowerCase();
                 if (statusText === "à faire") {
-                    currentTask.status = "todo";
+                    currentTask.status = "open";
                 } else if (statusText === "en cours") {
-                    currentTask.status = "in-progress";
+                    currentTask.status = "progressing";
                 } else if (statusText === "terminé") {
-                    currentTask.status = "done";
+                    currentTask.status = "completed";
                 } else if (statusText === "annulé") {
                     currentTask.status = "cancelled";
                 }
             }
         });
-
-        // Journalisation pour vérifier les tâches détectées
-        console.log("Tâches détectées:", JSON.stringify(data.tasks, null, 2));
-
-        // Mettre à journalisation des tâches avant la mise à jour
-        console.log("État des tâches avant mise à jour:", JSON.stringify(tasks, null, 2));
 
         // Mettre à jour les états globaux
         setTitle(data.title);
@@ -250,7 +248,7 @@ const CreatePlanning = () => {
         // Mettre à jour les tâches
         const updatedTasks = tasks.map((task, index) => {
             if (index < data.tasks.length && task.filled) {
-                const updatedTask = {
+                return {
                     ...task,
                     title: data.tasks[index].title || task.title,
                     detail: data.tasks[index].detail || task.detail,
@@ -259,15 +257,10 @@ const CreatePlanning = () => {
                     priority: data.tasks[index].priority || task.priority,
                     status: data.tasks[index].status || task.status,
                 };
-                console.log(`Tâche ${task.id} mise à jour:`, JSON.stringify(updatedTask, null, 2));
-                return updatedTask;
             }
             return task;
         });
         setTasks(updatedTasks);
-
-        // Journalisation pour vérifier l'état final des tâches
-        console.log("État final des tâches après mise à jour:", JSON.stringify(updatedTasks, null, 2));
 
         toast.current.show({
             severity: "info",
@@ -334,71 +327,68 @@ const CreatePlanning = () => {
             return `${year}-${month}-${day}`;
         };
 
-        // Étape 1 : Uploader le fichier s'il existe
-        let documentId = null;
-        if (files.length > 0) {
-            const file = files[0]; // On prend le premier fichier uploadé
-            const formData = new FormData();
-            formData.append("file", file);
-            formData.append("name", file.name);
-            const match = file.name.match(fileExtensionRegex);
-            const extension = match ? match[1].toLowerCase() : "unknown";
-            formData.append("type", extension);
+        // Préparer les tâches pour l'envoi
+        const formattedTasks = tasks
+            .filter((task) => task.filled && task.title.trim())
+            .map((task) => ({
+                title: task.title,
+                detail: task.detail || "",
+                start_date: task.startDate ? formatDate(task.startDate) : formatDate(startDate),
+                end_date: task.endDate ? formatDate(task.endDate) : formatDate(endDate),
+                priority: task.priority || "medium",
+                status: task.status || "open",
+            }));
 
-            try {
-                const response = await axios.post("/api/documents/", formData, {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
-                });
-                documentId = response.data.id; // Récupérer l'ID du document créé
-                toast.current.show({
-                    severity: "info",
-                    summary: "Fichier uploadé",
-                    detail: "Le fichier a été uploadé avec succès.",
-                    life: 3000,
-                });
-            } catch (error) {
+        // Vérifier que chaque tâche a des dates valides
+        for (const task of formattedTasks) {
+            if (!task.start_date || !task.end_date) {
                 toast.current.show({
                     severity: "error",
-                    summary: "Erreur d'upload",
-                    detail: `Erreur lors de l'upload du fichier: ${error.message}`,
+                    summary: "Erreur",
+                    detail: `Veuillez remplir les dates de début et de fin pour la tâche "${task.title}".`,
                     life: 3000,
                 });
                 return;
             }
         }
 
-        // Étape 2 : Créer le Planning
+        // Créer le Planning avec les tâches
         const planningData = {
             title: title,
-            project: 1, // Projet par défaut (id=1), à ajuster selon ton backend
-            description: description || null,
             start_date: formatDate(startDate),
             end_date: formatDate(endDate),
+            tasks: formattedTasks,
         };
 
         try {
-            const response = await axios.post("/api/plannings/", planningData);
+            const response = await axios.post("http://127.0.0.1:8000/api/plannings/create/", planningData, {
+                headers: {
+                    "Content-Type": "application/json",
+                },
+            });
             toast.current.show({
                 severity: "success",
                 summary: "Enregistré",
-                detail: "Le chronogramme a été enregistré avec succès.",
+                detail: "Le chronogramme et les tâches ont été enregistrés avec succès.",
                 life: 3000,
             });
 
-            // Redirection ou réinitialisation des champs après succès
+            // Réinitialisation des champs après succès
             setTitle("");
             setStartDate(null);
             setEndDate(null);
             setDescription("");
             setFiles([]);
-            navigate("/intern/planning"); // Redirection vers la liste des plannings
+            setTasks([
+                { id: 1, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+                { id: 2, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+            ]);
+            navigate("/intern/planning");
         } catch (error) {
             toast.current.show({
                 severity: "error",
                 summary: "Erreur",
-                detail: `Erreur lors de l'enregistrement: ${error.response?.data?.detail || error.message}`,
+                detail: `Erreur lors de l'enregistrement: ${error.response?.data?.message || error.message}`,
                 life: 3000,
             });
         }
@@ -640,7 +630,6 @@ const CreatePlanning = () => {
                                 label="Enregistrer"
                                 size="small"
                                 className="!bg-gray-700 hover:!bg-gray-800 !border-none text-white"
-                                onClick={handleSavePlanning}
                             />
                             <i
                                 className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400"
@@ -800,6 +789,7 @@ const CreatePlanning = () => {
                     <Button
                         label="Annuler"
                         className="!bg-gray-200 hover:!bg-gray-300 !border-none !text-gray-700 mr-4"
+                        onClick={() => navigate("/intern/planning")}
                     />
                     <Button
                         label="Valider"
@@ -827,11 +817,11 @@ const CreatePlanning = () => {
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
                             <h5 className="text-indigo-500 font-semibold">Date de fin</h5>
-                            <p>{endDate ? endDate.toLocaleDateString() : "09/06/2025"}</p>
+                            <p>{endDate ? endDate.toLocaleDateString() : "Non défini"}</p>
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
                             <h5 className="text-indigo-500 font-semibold">Date de début</h5>
-                            <p>{startDate ? startDate.toLocaleDateString() : "09/06/2025"}</p>
+                            <p>{startDate ? startDate.toLocaleDateString() : "Non défini"}</p>
                         </div>
                         <div className="grid grid-cols-[25%_75%] gap-6 mt-2">
                             <h5 className="text-indigo-500 font-semibold">Tâches</h5>
@@ -847,6 +837,7 @@ const CreatePlanning = () => {
                         <Button
                             label="Soumettre"
                             className="!mt-8 !w-full !flex !justify-center !items-center !bg-indigo-500 hover:!bg-indigo-600 !border-none text-white"
+                            onClick={handleSavePlanning}
                         />
                     </Dialog>
                 </section>

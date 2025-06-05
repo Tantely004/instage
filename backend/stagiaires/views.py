@@ -544,3 +544,73 @@ class GenerationThemeAPIView(APIView):
                 {"message": f"Erreur lors de la génération des thèmes : {str(e)}"},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+        
+class CreatePlanningAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            user = request.user
+            if user.role != 'intern':
+                return Response(
+                    {"message": "Accès réservé aux stagiaires."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Récupérer le profil Intern
+            try:
+                intern = Intern.objects.get(user=user)
+            except Intern.DoesNotExist:
+                return Response(
+                    {"message": "Profil stagiaire introuvable."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Récupérer l'Internship associé
+            try:
+                internship = Internship.objects.get(intern=intern, status='progressing')
+            except Internship.DoesNotExist:
+                return Response(
+                    {"message": "Aucun stage en cours trouvé."},
+                    status=status.HTTP_404_NOT_FOUND
+                )
+
+            # Récupérer ou créer le Project associé
+            project, created = Project.objects.get_or_create(
+                internship=internship,
+                defaults={'title': request.data.get('title', 'Projet par défaut')}
+            )
+
+            # Créer le Planning
+            planning_data = {
+                'title': request.data.get('title'),
+                'project': project,
+                'start_date': request.data.get('start_date'),
+                'end_date': request.data.get('end_date'),
+            }
+
+            planning = Planning.objects.create(**planning_data)
+
+            # Créer les Tasks
+            tasks_data = request.data.get('tasks', [])
+            for task_data in tasks_data:
+                if task_data.get('title'):  # S'assurer que la tâche a un titre
+                    Task.objects.create(
+                        title=task_data.get('title'),
+                        description=task_data.get('detail', ''),
+                        priority=task_data.get('priority', 'medium').upper(),  # Adapter au modèle Task
+                        status=task_data.get('status', 'open').upper(),  # Adapter au modèle Task
+                        start_date=task_data.get('start_date'),
+                        end_date=task_data.get('end_date'),
+                    )
+
+            return Response(
+                {"message": "Chronogramme et tâches enregistrés avec succès."},
+                status=status.HTTP_201_CREATED
+            )
+
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

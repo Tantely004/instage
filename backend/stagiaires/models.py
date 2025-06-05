@@ -194,6 +194,7 @@ class TaskStatusChoices(models.TextChoices):
     OPEN = 'open', 'Open'
     PROGRESSING = 'progressing', 'Progressing'
     COMPLETED = 'completed', 'Completed'
+    CANCELLED = 'cancelled', 'Cancelled'
 
 class TaskPriorityChoices(models.TextChoices):
     LOW = 'low', 'Low'
