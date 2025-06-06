@@ -33,6 +33,7 @@ import ResourcesSupervisor from './pages/supervisor/Resources'
 import ProjectSupervisor from './pages/supervisor/FollowUp/Project'
 import CalendarSupervisor from './pages/supervisor/Planning'
 import CreatePlanningSupervisor from './pages/supervisor/Planning/Create'
+import ListPlanning from './pages/supervisor/Planning/List'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
@@ -115,6 +116,7 @@ function App() {
                     <Route index path="follow-up/project" element={<ProjectSupervisor />} />
                     <Route index path="planning" element={<CalendarSupervisor />} />
                     <Route index path="planning/create" element={<CreatePlanningSupervisor />} />
+                    <Route index path="planning/received-list" element={<ListPlanning/>} />
                     <Route index path="profile" element={<ProfileSupervisor />} />
                     <Route index path="resources" element={<ResourcesSupervisor />} />
                 </Route>
