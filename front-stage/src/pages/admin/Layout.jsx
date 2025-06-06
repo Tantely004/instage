@@ -98,7 +98,7 @@ const LayoutAdmin = () => {
                     </div>
                 </header>
 
-                <main className={`mt-28 ${collapsed ? 'ml-24 w-[90.5%]' : 'ml-72'} mr-8`}>
+                <main className={`mt-28 !overflow-x-hidden ${collapsed ? 'ml-24 min-w-full' : 'ml-72'} mr-8`}>
                     <Outlet collapsed={collapsed} setCollapsed={setCollapsed}/>
                 </main>
             </div>

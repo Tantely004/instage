@@ -34,6 +34,7 @@ import ProjectSupervisor from './pages/supervisor/FollowUp/Project'
 import CalendarSupervisor from './pages/supervisor/Planning'
 import CreatePlanningSupervisor from './pages/supervisor/Planning/Create'
 import ListPlanning from './pages/supervisor/Planning/List'
+import AdminAssignment from './pages/admin/FollowUp/Assignment'
 
 // Middleware
 import RequireAuth from './middleware/RequireAuth'
@@ -127,6 +128,7 @@ function App() {
                 <Route index path="users" element={<Users />} />
                 <Route index path="users/create" element={<CreateUser />} />
                 <Route index path="follow-up" element={<FollowUpAdmin />} />
+                <Route index path="follow-up/assign" element={<AdminAssignment />} />
               </Route>
             </Routes>
         </div>
