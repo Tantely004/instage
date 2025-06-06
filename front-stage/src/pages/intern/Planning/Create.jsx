@@ -16,6 +16,7 @@ import Tesseract from "tesseract.js";
 import mammoth from "mammoth";
 import { getDocument } from "pdfjs-dist";
 import axios from "axios";
+import exportToCSV from "../../../utils/exportToCSV";
 
 const CreatePlanning = () => {
     const [submitted, setSubmitted] = useState(false);
@@ -52,7 +53,7 @@ const CreatePlanning = () => {
     const taskRegex = /^(?:tâche|task):\s*(.+)$/i;
     const fileExtensionRegex = /\.([a-zA-Z0-9]+)$/;
 
-    // Fonction pour normaliser les chaînes (accents, espaces insécables, etc.)
+    // Fonction pour normaliser les chaînes
     const normalizeString = (str) => {
         return str
             .normalize("NFD")
@@ -125,7 +126,6 @@ const CreatePlanning = () => {
         };
 
         let currentTask = null;
-        let hasEncounteredTask = false;
 
         lines.forEach((line) => {
             const trimmedLine = line.trim();
@@ -160,14 +160,13 @@ const CreatePlanning = () => {
                 }
             }
 
-            // Description (uniquement avant la première tâche)
-            if (!hasEncounteredTask && (match = trimmedLine.match(descriptionRegex))) {
+            // Description
+            if ((match = trimmedLine.match(descriptionRegex))) {
                 data.description = match[1].trim() || "Description par défaut";
             }
 
             // Tâche
             if ((match = trimmedLine.match(taskRegex))) {
-                hasEncounteredTask = true;
                 currentTask = { title: match[1].trim(), detail: "", startDate: null, endDate: null, priority: null, status: null };
                 data.tasks.push(currentTask);
             }
@@ -202,40 +201,27 @@ const CreatePlanning = () => {
             // Priorité de la tâche
             if (currentTask && (match = trimmedLine.match(/^priorité:\s*(urgent|secondaire|optionnel)\s*$/i))) {
                 const priorityText = match[1].toLowerCase();
-                if (priorityText === "urgent") {
-                    currentTask.priority = "high";
-                } else if (priorityText === "secondaire") {
-                    currentTask.priority = "medium";
-                } else if (priorityText === "optionnel") {
-                    currentTask.priority = "low";
-                }
+                if (priorityText === "urgent") currentTask.priority = "high";
+                else if (priorityText === "secondaire") currentTask.priority = "medium";
+                else if (priorityText === "optionnel") currentTask.priority = "low";
             } else if (currentTask && trimmedLine.toLowerCase().startsWith("priorité:")) {
                 const normalizedLine = normalizeString(trimmedLine);
                 const normalizedMatch = normalizedLine.match(/^priorite:\s*(urgent|secondaire|optionnel)\s*$/i);
                 if (normalizedMatch) {
                     const priorityText = normalizedMatch[1].toLowerCase();
-                    if (priorityText === "urgent") {
-                        currentTask.priority = "high";
-                    } else if (priorityText === "secondaire") {
-                        currentTask.priority = "medium";
-                    } else if (priorityText === "optionnel") {
-                        currentTask.priority = "low";
-                    }
+                    if (priorityText === "urgent") currentTask.priority = "high";
+                    else if (priorityText === "secondaire") currentTask.priority = "medium";
+                    else if (priorityText === "optionnel") currentTask.priority = "low";
                 }
             }
 
             // État de la tâche
             if (currentTask && (match = trimmedLine.match(/^état de la tâche:\s*(à faire|en cours|terminé|annulé)$/i))) {
                 const statusText = match[1].toLowerCase();
-                if (statusText === "à faire") {
-                    currentTask.status = "open";
-                } else if (statusText === "en cours") {
-                    currentTask.status = "progressing";
-                } else if (statusText === "terminé") {
-                    currentTask.status = "completed";
-                } else if (statusText === "annulé") {
-                    currentTask.status = "cancelled";
-                }
+                if (statusText === "à faire") currentTask.status = "open";
+                else if (statusText === "en cours") currentTask.status = "progressing";
+                else if (statusText === "terminé") currentTask.status = "completed";
+                else if (statusText === "annulé") currentTask.status = "cancelled";
             }
         });
 
@@ -245,21 +231,20 @@ const CreatePlanning = () => {
         setEndDate(data.endDate || null);
         setDescription(data.description);
 
-        // Mettre à jour les tâches
-        const updatedTasks = tasks.map((task, index) => {
-            if (index < data.tasks.length && task.filled) {
-                return {
-                    ...task,
-                    title: data.tasks[index].title || task.title,
-                    detail: data.tasks[index].detail || task.detail,
-                    startDate: data.tasks[index].startDate || task.startDate,
-                    endDate: data.tasks[index].endDate || task.endDate,
-                    priority: data.tasks[index].priority || task.priority,
-                    status: data.tasks[index].status || task.status,
-                };
-            }
-            return task;
-        });
+        // Mettre à jour les tâches pour correspondre au nombre détecté
+        const updatedTasks = [];
+        for (let i = 0; i < Math.max(2, data.tasks.length); i++) {
+            updatedTasks.push({
+                id: i + 1,
+                filled: i < data.tasks.length,
+                title: data.tasks[i]?.title || "",
+                detail: data.tasks[i]?.detail || "",
+                startDate: data.tasks[i]?.startDate || null,
+                endDate: data.tasks[i]?.endDate || null,
+                priority: data.tasks[i]?.priority || null,
+                status: data.tasks[i]?.status || null,
+            });
+        }
         setTasks(updatedTasks);
 
         toast.current.show({
@@ -272,20 +257,12 @@ const CreatePlanning = () => {
 
     const handleAddTask = () => {
         setTasks((prevTasks) => {
-            const index = prevTasks.findIndex((task) => !task.filled);
-            if (index !== -1) {
-                const updatedTasks = [...prevTasks];
-                updatedTasks[index].filled = true;
-                return updatedTasks;
-            } else {
-                toast.current.show({
-                    severity: "warn",
-                    summary: "Limite atteinte",
-                    detail: "Toutes les tâches disponibles sont remplies.",
-                    life: 3000,
-                });
-            }
-            return prevTasks;
+            const maxId = Math.max(...prevTasks.map((task) => task.id), 0);
+            const newTasks = [
+                { id: maxId + 1, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+                { id: maxId + 2, filled: true, title: "", detail: "", startDate: null, endDate: null, priority: null, status: null },
+            ];
+            return [...prevTasks, ...newTasks];
         });
     };
 
@@ -297,8 +274,47 @@ const CreatePlanning = () => {
         );
     };
 
+    const handleTaskDetailChange = (taskId, value) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, detail: value } : task
+            )
+        );
+    };
+
+    const handleTaskStartDateChange = (taskId, value) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, startDate: value } : task
+            )
+        );
+    };
+
+    const handleTaskEndDateChange = (taskId, value) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, endDate: value } : task
+            )
+        );
+    };
+
+    const handleTaskPriorityChange = (taskId, value) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, priority: value } : task
+            )
+        );
+    };
+
+    const handleTaskStatusChange = (taskId, value) => {
+        setTasks((prevTasks) =>
+            prevTasks.map((task) =>
+                task.id === taskId ? { ...task, status: value } : task
+            )
+        );
+    };
+
     const handleSavePlanning = async () => {
-        // Validation des champs obligatoires
         if (!title.trim()) {
             toast.current.show({
                 severity: "error",
@@ -319,7 +335,6 @@ const CreatePlanning = () => {
             return;
         }
 
-        // Formatter les dates en AAAA-MM-JJ
         const formatDate = (date) => {
             const year = date.getFullYear();
             const month = String(date.getMonth() + 1).padStart(2, "0");
@@ -327,7 +342,6 @@ const CreatePlanning = () => {
             return `${year}-${month}-${day}`;
         };
 
-        // Préparer les tâches pour l'envoi
         const formattedTasks = tasks
             .filter((task) => task.filled && task.title.trim())
             .map((task) => ({
@@ -339,7 +353,6 @@ const CreatePlanning = () => {
                 status: task.status || "open",
             }));
 
-        // Vérifier que chaque tâche a des dates valides
         for (const task of formattedTasks) {
             if (!task.start_date || !task.end_date) {
                 toast.current.show({
@@ -352,7 +365,6 @@ const CreatePlanning = () => {
             }
         }
 
-        // Créer le Planning avec les tâches
         const planningData = {
             title: title,
             start_date: formatDate(startDate),
@@ -362,9 +374,7 @@ const CreatePlanning = () => {
 
         try {
             const response = await axios.post("http://127.0.0.1:8000/api/plannings/create/", planningData, {
-                headers: {
-                    "Content-Type": "application/json",
-                },
+                headers: { "Content-Type": "application/json" },
             });
             toast.current.show({
                 severity: "success",
@@ -373,7 +383,6 @@ const CreatePlanning = () => {
                 life: 3000,
             });
 
-            // Réinitialisation des champs après succès
             setTitle("");
             setStartDate(null);
             setEndDate(null);
@@ -394,19 +403,35 @@ const CreatePlanning = () => {
         }
     };
 
-    const items = [
-        {
-            label: "Planning",
-            command: () => navigate("/intern/planning"),
-        },
-        {
-            label: "Nouveau",
-            command: () => navigate("/intern/planning/create"),
-        },
-    ];
-    const home = {
-        icon: "pi pi-home",
+    const handleExportToCSV = () => {
+        const exportData = {
+            title: title,
+            startDate: startDate,
+            endDate: endDate,
+            description: description,
+            tasks: tasks.filter((task) => task.filled && task.title.trim()).map((task) => ({
+                title: task.title,
+                detail: task.detail,
+                startDate: task.startDate,
+                endDate: task.endDate,
+                priority: task.priority,
+                status: task.status,
+            })),
+        };
+        exportToCSV(exportData, `planning_${new Date().toISOString().slice(0, 10)}.csv`);
+        toast.current.show({
+            severity: "success",
+            summary: "Exportation",
+            detail: "Les données ont été exportées avec succès en CSV.",
+            life: 3000,
+        });
     };
+
+    const items = [
+        { label: "Planning", command: () => navigate("/intern/planning") },
+        { label: "Nouveau", command: () => navigate("/intern/planning/create") },
+    ];
+    const home = { icon: "pi pi-home" };
 
     const handleFileUpload = async (event) => {
         const selectedFiles = Array.from(event.target.files || event.dataTransfer.files);
@@ -417,19 +442,11 @@ const CreatePlanning = () => {
 
             try {
                 switch (extension) {
-                    case "txt":
-                        textContent = await fileHandlers.handleTxt(file);
-                        break;
-                    case "docx":
-                        textContent = await fileHandlers.handleDocx(file);
-                        break;
-                    case "pdf":
-                        textContent = await fileHandlers.handlePdf(file);
-                        break;
+                    case "txt": textContent = await fileHandlers.handleTxt(file); break;
+                    case "docx": textContent = await fileHandlers.handleDocx(file); break;
+                    case "pdf": textContent = await fileHandlers.handlePdf(file); break;
                     case "jpg":
-                    case "png":
-                        textContent = await fileHandlers.handleImage(file);
-                        break;
+                    case "png": textContent = await fileHandlers.handleImage(file); break;
                     default:
                         toast.current.show({
                             severity: "error",
@@ -459,24 +476,14 @@ const CreatePlanning = () => {
         }
     };
 
-    const handleDragOver = (event) => {
-        event.preventDefault();
-    };
-
+    const handleDragOver = (event) => event.preventDefault();
     const handleDrop = (event) => {
         event.preventDefault();
         handleFileUpload(event);
     };
 
-    const pageVariants = {
-        initial: { opacity: 0, y: -10 },
-        in: { opacity: 1, y: 0 },
-        out: { opacity: 0, y: -5 },
-    };
-
-    const pageTransition = {
-        duration: 0.5,
-    };
+    const pageVariants = { initial: { opacity: 0, y: -10 }, in: { opacity: 1, y: 0 }, out: { opacity: 0, y: -5 } };
+    const pageTransition = { duration: 0.5 };
 
     return (
         <motion.div
@@ -493,9 +500,7 @@ const CreatePlanning = () => {
                     model={items}
                     home={home}
                     className="!font-semibold !text-sm !bg-transparent !border-0 !p-0"
-                    pt={{
-                        label: { className: "!text-indigo-500" },
-                    }}
+                    pt={{ label: { className: "!text-indigo-500" } }}
                 />
             </div>
 
@@ -507,8 +512,7 @@ const CreatePlanning = () => {
                         <div className="mt-8">
                             <div className="flex flex-col space-y-3">
                                 <label>
-                                    <i className="pi pi-file text-indigo-400 mr-3" />
-                                    Titre du chronogramme
+                                    <i className="pi pi-file text-indigo-400 mr-3" /> Titre du chronogramme
                                 </label>
                                 <InputText
                                     size="small"
@@ -521,8 +525,7 @@ const CreatePlanning = () => {
                             <div className="grid grid-cols-2 gap-6 mt-4">
                                 <div className="flex flex-col space-y-3">
                                     <label>
-                                        <i className="pi pi-calendar text-indigo-400 mr-3" />
-                                        Date de début
+                                        <i className="pi pi-calendar text-indigo-400 mr-3" /> Date de début
                                     </label>
                                     <Calendar
                                         size="small"
@@ -534,8 +537,7 @@ const CreatePlanning = () => {
                                 </div>
                                 <div className="flex flex-col space-y-3">
                                     <label>
-                                        <i className="pi pi-calendar text-indigo-400 mr-3" />
-                                        Date de fin
+                                        <i className="pi pi-calendar text-indigo-400 mr-3" /> Date de fin
                                     </label>
                                     <Calendar
                                         size="small"
@@ -549,8 +551,7 @@ const CreatePlanning = () => {
 
                             <div className="flex flex-col space-y-3 mt-4">
                                 <label>
-                                    <i className="pi pi-align-left text-indigo-400 mr-3" />
-                                    Ajouter une description
+                                    <i className="pi pi-align-left text-indigo-400 mr-3" /> Ajouter une description
                                 </label>
                                 <InputTextarea
                                     rows={5}
@@ -630,23 +631,20 @@ const CreatePlanning = () => {
                                 label="Enregistrer"
                                 size="small"
                                 className="!bg-gray-700 hover:!bg-gray-800 !border-none text-white"
+                                onClick={handleExportToCSV}
                             />
-                            <i
-                                className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400"
-                                title="Options"
-                            />
+                            <i className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400" title="Options" />
                         </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-8 mt-4">
-                        {tasks.map((task, index) => (
-                            <div key={task.id} className="shadow rounded-lg p-6 relative">
-                                {task.filled ? (
+                        {tasks.map((task) =>
+                            task.filled && (
+                                <div key={task.id} className="shadow rounded-lg p-6 relative">
                                     <div>
                                         <div className="flex flex-col space-y-3">
                                             <label>
-                                                <i className="pi pi-file text-indigo-400 mr-3" />
-                                                Intitulé
+                                                <i className="pi pi-file text-indigo-400 mr-3" /> Intitulé
                                             </label>
                                             <InputText
                                                 size="small"
@@ -657,17 +655,12 @@ const CreatePlanning = () => {
                                         </div>
                                         <div className="flex flex-col space-y-3 mt-4">
                                             <label>
-                                                <i className="pi pi-align-left text-indigo-400 mr-3" />
-                                                Détail
+                                                <i className="pi pi-align-left text-indigo-400 mr-3" /> Détail
                                             </label>
                                             <Editor
                                                 value={task.detail}
                                                 onTextChange={(e) =>
-                                                    setTasks((prevTasks) =>
-                                                        prevTasks.map((t) =>
-                                                            t.id === task.id ? { ...t, detail: e.htmlValue } : t
-                                                        )
-                                                    )
+                                                    handleTaskDetailChange(task.id, e.htmlValue)
                                                 }
                                                 className="h-64 text-sm"
                                             />
@@ -675,38 +668,28 @@ const CreatePlanning = () => {
                                         <div className="grid grid-cols-2 gap-6 mt-20">
                                             <div className="flex flex-col space-y-3">
                                                 <label>
-                                                    <i className="pi pi-calendar text-indigo-400 mr-3" />
-                                                    Date de début
+                                                    <i className="pi pi-calendar text-indigo-400 mr-3" /> Date de début
                                                 </label>
                                                 <Calendar
                                                     size="small"
                                                     className="w-full"
                                                     value={task.startDate}
                                                     onChange={(e) =>
-                                                        setTasks((prevTasks) =>
-                                                            prevTasks.map((t) =>
-                                                                t.id === task.id ? { ...t, startDate: e.value } : t
-                                                            )
-                                                        )
+                                                        handleTaskStartDateChange(task.id, e.value)
                                                     }
                                                     dateFormat="yy-mm-dd"
                                                 />
                                             </div>
                                             <div className="flex flex-col space-y-3">
                                                 <label>
-                                                    <i className="pi pi-calendar text-indigo-400 mr-3" />
-                                                    Date de fin
+                                                    <i className="pi pi-calendar text-indigo-400 mr-3" /> Date de fin
                                                 </label>
                                                 <Calendar
                                                     size="small"
                                                     className="w-full"
                                                     value={task.endDate}
                                                     onChange={(e) =>
-                                                        setTasks((prevTasks) =>
-                                                            prevTasks.map((t) =>
-                                                                t.id === task.id ? { ...t, endDate: e.value } : t
-                                                            )
-                                                        )
+                                                        handleTaskEndDateChange(task.id, e.value)
                                                     }
                                                     dateFormat="yy-mm-dd"
                                                 />
@@ -716,17 +699,12 @@ const CreatePlanning = () => {
                                         <div className="grid grid-cols-2 gap-6 mt-4">
                                             <div className="flex flex-col space-y-3">
                                                 <label>
-                                                    <i className="pi pi-exclamation-circle text-indigo-400 mr-3" />
-                                                    Priorité
+                                                    <i className="pi pi-exclamation-circle text-indigo-400 mr-3" /> Priorité
                                                 </label>
                                                 <Dropdown
                                                     value={task.priority}
                                                     onChange={(e) =>
-                                                        setTasks((prevTasks) =>
-                                                            prevTasks.map((t) =>
-                                                                t.id === task.id ? { ...t, priority: e.value } : t
-                                                            )
-                                                        )
+                                                        handleTaskPriorityChange(task.id, e.value)
                                                     }
                                                     options={severities}
                                                     optionLabel="name"
@@ -737,17 +715,12 @@ const CreatePlanning = () => {
                                             </div>
                                             <div className="flex flex-col space-y-3">
                                                 <label>
-                                                    <i className="pi pi-hourglass text-indigo-400 mr-3" />
-                                                    État de la tâche
+                                                    <i className="pi pi-hourglass text-indigo-400 mr-3" /> État de la tâche
                                                 </label>
                                                 <Dropdown
                                                     value={task.status}
                                                     onChange={(e) =>
-                                                        setTasks((prevTasks) =>
-                                                            prevTasks.map((t) =>
-                                                                t.id === task.id ? { ...t, status: e.value } : t
-                                                            )
-                                                        )
+                                                        handleTaskStatusChange(task.id, e.value)
                                                     }
                                                     options={taskStatuses}
                                                     optionLabel="name"
@@ -760,8 +733,7 @@ const CreatePlanning = () => {
 
                                         <div className="flex flex-col space-y-3 mt-4">
                                             <label>
-                                                <i className="pi pi-link text-indigo-400 mr-3" />
-                                                Pièces jointes
+                                                <i className="pi pi-link text-indigo-400 mr-3" /> Pièces jointes
                                             </label>
                                             <FileUpload
                                                 mode="basic"
@@ -771,17 +743,9 @@ const CreatePlanning = () => {
                                             />
                                         </div>
                                     </div>
-                                ) : (
-                                    <div className="h-full flex flex-col justify-center items-center text-gray-400">
-                                        <p>Tâche vide</p>
-                                        <p className="text-center mt-4 text-sm">
-                                            Veuillez cliquer sur le bouton <strong>"Ajouter"</strong> pour remplir cette
-                                            tâche.
-                                        </p>
-                                    </div>
-                                )}
-                            </div>
-                        ))}
+                                </div>
+                            )
+                        )}
                     </div>
                 </section>
 

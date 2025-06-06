@@ -9,6 +9,8 @@ from datetime import datetime, timedelta
 from django.utils import timezone
 from django.contrib.auth import get_user_model
 import requests
+from django.db.models import Count
+from django.db.models.functions import ExtractMonth
 from decouple import config # type: ignore
 
 class LoginAPIView(TokenObtainPairView):
@@ -280,15 +282,6 @@ class DashboardInstructorAPIView(APIView):
             "supervisions": supervisions,
         }, status=status.HTTP_200_OK)
 
-from rest_framework.views import APIView
-from rest_framework.response import Response
-from rest_framework import status
-from rest_framework.permissions import IsAuthenticated
-from django.db.models import Count
-from django.db.models.functions import ExtractMonth
-from datetime import datetime
-from .models import User, Internship, Document, Report, Intern
-
 class DashboardAdminAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
@@ -477,7 +470,6 @@ class GenerationThemeAPIView(APIView):
             url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key={api_key}"
 
             # Envoyer la requête à Gemini API
-            print(f"Prompt envoyé : {full_prompt}")  # Débogage
             response = requests.post(
                 url,
                 json={
@@ -493,7 +485,6 @@ class GenerationThemeAPIView(APIView):
                     "Content-Type": "application/json"
                 }
             )
-            print(f"Réponse brute de Gemini : {response.text}")  # Débogage
 
             # Vérifier si la requête a réussi
             if response.status_code != 200:
