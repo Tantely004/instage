@@ -185,6 +185,7 @@ const CalendarSupervisor = () => {
                         label='Nouveau'
                         icon="pi pi-plus"
                         className='!h-10'
+                        onClick={() => navigate('/supervisor/planning/create')}
                     />
                 </div>
             </section>
