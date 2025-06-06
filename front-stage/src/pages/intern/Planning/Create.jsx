@@ -18,6 +18,14 @@ import { getDocument } from "pdfjs-dist";
 import axios from "axios";
 import exportToCSV from "../../../utils/exportToCSV";
 
+// Fonction pour nettoyer les balises HTML
+const stripHtmlTags = (html) => {
+    if (!html) return "";
+    const div = document.createElement("div");
+    div.innerHTML = html;
+    return div.textContent || div.innerText || "";
+};
+
 const CreatePlanning = () => {
     const [submitted, setSubmitted] = useState(false);
     const [tasks, setTasks] = useState([
@@ -301,7 +309,7 @@ const CreatePlanning = () => {
     const handleTaskPriorityChange = (taskId, value) => {
         setTasks((prevTasks) =>
             prevTasks.map((task) =>
-                task.id === taskId ? { ...task, priority: value } : task
+                task.id === taskId ? { ...task, priority: value.toLowerCase() } : task
             )
         );
     };
@@ -309,7 +317,7 @@ const CreatePlanning = () => {
     const handleTaskStatusChange = (taskId, value) => {
         setTasks((prevTasks) =>
             prevTasks.map((task) =>
-                task.id === taskId ? { ...task, status: value } : task
+                task.id === taskId ? { ...task, status: value.toLowerCase() } : task
             )
         );
     };
@@ -346,11 +354,11 @@ const CreatePlanning = () => {
             .filter((task) => task.filled && task.title.trim())
             .map((task) => ({
                 title: task.title,
-                detail: task.detail || "",
+                detail: stripHtmlTags(task.detail) || "", // Nettoyer les balises HTML
                 start_date: task.startDate ? formatDate(task.startDate) : formatDate(startDate),
                 end_date: task.endDate ? formatDate(task.endDate) : formatDate(endDate),
-                priority: task.priority || "medium",
-                status: task.status || "open",
+                priority: (task.priority || "medium").toLowerCase(), // Assurer que c'est en minuscules
+                status: (task.status || "open").toLowerCase(), // Assurer que c'est en minuscules
             }));
 
         for (const task of formattedTasks) {
@@ -411,7 +419,7 @@ const CreatePlanning = () => {
             description: description,
             tasks: tasks.filter((task) => task.filled && task.title.trim()).map((task) => ({
                 title: task.title,
-                detail: task.detail,
+                detail: stripHtmlTags(task.detail), // Nettoyer pour l'export CSV aussi
                 startDate: task.startDate,
                 endDate: task.endDate,
                 priority: task.priority,

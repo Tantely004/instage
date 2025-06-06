@@ -11,4 +11,5 @@ urlpatterns = [
     path('toolbar/', ToolbarDetailAPIView.as_view(), name='toolbar-detail'),
     path('generationtheme/', GenerationThemeAPIView.as_view(), name='generation-theme'),
     path('plannings/create/', CreatePlanningAPIView.as_view(), name='create-planning'),
+    path('taskcalendar/', TaskCalendarAPIView.as_view(), name='taskcalendar'),
 ]

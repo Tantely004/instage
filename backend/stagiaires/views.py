@@ -11,6 +11,7 @@ from django.contrib.auth import get_user_model
 import requests
 from django.db.models import Count
 from django.db.models.functions import ExtractMonth
+from rest_framework import generics
 from decouple import config # type: ignore
 
 class LoginAPIView(TokenObtainPairView):
@@ -605,3 +606,29 @@ class CreatePlanningAPIView(APIView):
                 {"message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class TaskCalendarAPIView(generics.ListAPIView):
+    serializer_class = TaskSerializer
+
+    def get_queryset(self):
+        return Task.objects.all().order_by('start_date')
+
+    def list(self, request, *args, **kwargs):
+        queryset = self.get_queryset()
+        serializer = self.serializer_class(queryset, many=True)
+        events = [
+            {
+                'id': task.id,
+                'title': task.title,
+                'start': task.start_date.isoformat(),
+                'end': task.end_date.isoformat() if task.end_date else None,
+                'extendedProps': {
+                    'description': task.description or '',
+                    'priority': task.priority,
+                    'status': task.status,
+                    'progression': task.progression,
+                }
+            }
+            for task in queryset
+        ]
+        return Response(events)

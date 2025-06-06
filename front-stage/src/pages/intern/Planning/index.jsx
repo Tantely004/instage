@@ -1,5 +1,5 @@
 /* eslint-disable no-unused-vars */
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { Calendar } from 'primereact/calendar'
 import { Button } from 'primereact/button'
 import { Tag } from 'primereact/tag'
@@ -9,6 +9,7 @@ import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import frLocale from '@fullcalendar/core/locales/fr'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 import imgPlanning from "../../../assets/images/img-planning.png"
 import imgIntern from "../../../assets/images/img_profile_intern.jpg"
@@ -17,6 +18,19 @@ const PlanningIndex = () => {
     const navigate = useNavigate()
     const [date, setDate] = useState(null)
     const [selectedEvent, setSelectedEvent] = useState(null)
+    const [events, setEvents] = useState([])
+
+    useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                const response = await axios.get('http://127.0.0.1:8000/api/taskcalendar/')
+                setEvents(response.data)
+            } catch (error) {
+                console.error('Erreur lors du chargement des tâches:', error)
+            }
+        }
+        fetchTasks()
+    }, [])
 
     addLocale('fr', {
         firstDayOfWeek: 1,
@@ -27,7 +41,7 @@ const PlanningIndex = () => {
         monthNamesShort: ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'],
         today: 'Aujourd\'hui',
         clear: 'Effacer'
-    });
+    })
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -49,96 +63,35 @@ const PlanningIndex = () => {
         duration: 0.3,
     }
 
-    const events = [
-        { 
-            id: 1, 
-            title: 'Réunion avec encadrant', 
-            date: '2025-05-20',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'internship',
-                description: [
-                    'Point hebdomadaire pour discuter des progrès du stage.',
-                    'Planifier les prochaines étapes.'
-                ]
-            },
-            backgroundColor: '#4B5563',
-            borderColor: '#4B5563'
-        },
-        { 
-            id: 2, 
-            title: 'Tâche: Analyse données', 
-            date: '2025-05-22',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'company',
-                description: [
-                    'Analyser les données clients.',
-                    'Préparer le rapport mensuel de l’entreprise.'
-                ]
-            }
-        },
-        { 
-            id: 3, 
-            title: 'Rédaction rapport intermédiaire', 
-            date: '2025-05-25',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'internship',
-                description: [
-                    'Préparer le rapport intermédiaire du stage.',
-                    'Obtenir la validation par l’encadrant.'
-                ]
-            }
-        },
-        { 
-            id: 4, 
-            title: 'Formation logiciel interne', 
-            date: '2025-05-27',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Urgent',
-                type: 'company',
-                description: [
-                    'Participer à la formation sur l’outil CRM.',
-                    'Appliquer les connaissances à l’équipe.'
-                ]
-            }
-        },
-        { 
-            id: 5, 
-            title: 'Point projet équipe', 
-            date: '2025-05-29',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'company',
-                description: [
-                    'Réunion avec l’équipe projet.',
-                    'Alignement des tâches.'
-                ]
-            }
-        }
-    ]
-
     const handleEventClick = (info) => {
         setSelectedEvent({
             title: info.event.title,
             date: info.event.startStr,
             description: info.event.extendedProps.description,
-            type: info.event.extendedProps.type,
             priority: info.event.extendedProps.priority,
-            time: info.event.extendedProps.time,
-            room: info.event.extendedProps.room,
+            status: info.event.extendedProps.status,
+            progression: info.event.extendedProps.progression,
         })
+    }
+
+    // Mapper les priorités et statuts pour un affichage plus lisible
+    const getPriorityLabel = (priority) => {
+        switch (priority.toUpperCase()) {
+            case 'HIGH': return 'Urgent'
+            case 'MEDIUM': return 'Secondaire'
+            case 'LOW': return 'Optionnel'
+            default: return priority
+        }
+    }
+
+    const getStatusLabel = (status) => {
+        switch (status.toUpperCase()) {
+            case 'OPEN': return 'À faire'
+            case 'PROGRESSING': return 'En cours'
+            case 'COMPLETED': return 'Terminé'
+            case 'CANCELLED': return 'Annulé'
+            default: return status
+        }
     }
 
     return (
@@ -179,7 +132,7 @@ const PlanningIndex = () => {
                                     icon="pi pi-plus"
                                     label='Nouveau chronogramme'
                                     className='!bg-gray-600 !text-white hover:!no-underline hover:!bg-gray-700 !border-none'
-                                    onClick={ () => navigate("create") }
+                                    onClick={() => navigate("create")}
                                 />
                                 <Button
                                     icon="pi pi-google"
@@ -219,7 +172,7 @@ const PlanningIndex = () => {
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
                         <FullCalendar
-                            plugins={[ dayGridPlugin ]}
+                            plugins={[dayGridPlugin]}
                             initialView="dayGridMonth"
                             weekends={false}
                             events={events}
@@ -236,7 +189,7 @@ const PlanningIndex = () => {
                                 </div>
                             )}
                             dayHeaderClassNames="bg-indigo-50 text-indigo-700 font-semibold"
-                            dayCellClassNames="border Fulgrid-gray-200"
+                            dayCellClassNames="border-gray-200"
                             eventClassNames="border-none rounded-md text-white"
                         />
                     </div>
@@ -261,14 +214,22 @@ const PlanningIndex = () => {
 
                             <div className="mt-4 mb-4">
                                 <h3 className="text-xl font-bold text-indigo-500">{selectedEvent.title}</h3>
-                                <Tag 
-                                    value={selectedEvent.priority}
-                                    severity={
-                                        selectedEvent.priority === 'Urgent' ? 'danger' :
-                                        selectedEvent.priority === 'Secondaire' ? 'secondary' : 'info'
-                                    }
-                                    className="mt-2"
-                                />
+                                <div className="mt-2 flex gap-2">
+                                    <Tag 
+                                        value={getPriorityLabel(selectedEvent.priority)}
+                                        severity={
+                                            getPriorityLabel(selectedEvent.priority) === 'Urgent' ? 'danger' :
+                                            getPriorityLabel(selectedEvent.priority) === 'Secondaire' ? 'secondary' : 'info'
+                                        }
+                                    />
+                                    <Tag 
+                                        value={getStatusLabel(selectedEvent.status)}
+                                        severity={
+                                            getStatusLabel(selectedEvent.status) === 'Terminé' ? 'success' :
+                                            getStatusLabel(selectedEvent.status) === 'Annulé' ? 'danger' : 'warning'
+                                        }
+                                    />
+                                </div>
                                 <div className='mt-4 flex items-center gap-4'>
                                     <Button 
                                         icon='pi pi-refresh'
@@ -291,19 +252,14 @@ const PlanningIndex = () => {
                                             <span className='font-medium'>
                                                 {new Date(selectedEvent.date).toLocaleDateString('fr-FR')}
                                             </span>
-                                            <Tag value={`Porte ${selectedEvent.room}`} severity="secondary"/>
+                                            <Tag value={`Progression: ${selectedEvent.progression}%`} severity="info"/>
                                         </p>
-                                        <p>{ selectedEvent.time }</p>
                                     </div>
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
                                     <i className='pi pi-briefcase text-indigo-500'/>
-                                    <ul className="list-disc pl-5">
-                                        {selectedEvent.description.map((item, index) => (
-                                            <li key={index} className="text-gray-700">{item}</li>
-                                        ))}
-                                    </ul>
+                                    <p className="text-gray-700">{selectedEvent.description || 'Aucune description'}</p>
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
