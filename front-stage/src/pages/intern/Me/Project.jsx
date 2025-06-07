@@ -1,166 +1,65 @@
 /* eslint-disable no-unused-vars */
 import { BreadCrumb } from 'primereact/breadcrumb'
-import { Tag } from "primereact/tag"
-import { AvatarGroup } from "primereact/avatargroup"
-import { Avatar } from "primereact/avatar"
-import { Button } from "primereact/button"
-import { Dialog } from "primereact/dialog"
-import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import { useState } from "react"
-import imgIntern from "../../../assets/images/fake/intern2.png"
+import { Tag } from 'primereact/tag'
+import { AvatarGroup } from 'primereact/avatargroup'
+import { Avatar } from 'primereact/avatar'
+import { Button } from 'primereact/button'
+import { Dialog } from 'primereact/dialog'
+import { motion } from 'framer-motion'
+import { useNavigate } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import imgIntern from '../../../assets/images/fake/intern2.png'
+import axios from 'axios'
 
 const ProjectIntern = () => {
     const navigate = useNavigate()
     const [selectedTask, setSelectedTask] = useState(null)
     const [dialogVisible, setDialogVisible] = useState(false)
     const [draggedTask, setDraggedTask] = useState(null)
-    const [tasks, setTasks] = useState([
-        {
-            id: 1,
-            title: "Configurer la messagerie",
-            description: "Configurer la messagerie interne pour l'équipe projet.",
-            status: "no",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "30 Mai 2025",
-            priority: "Urgent",
-            attachments: [
-                { name: "email-config.pdf", size: "1.2 MB" }
-            ],
-            updated_at: "Il y a 1 h",
-        },
-        {
-            id: 2,
-            title: "Rédiger la documentation",
-            description: "Rédiger la documentation technique pour le projet.",
-            status: "pending",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "24 Mai 2025",
-            end_date: "24 Mai 2025",
-            priority: "Secondaire",
-            attachments: [
-                { name: "doc-draft.pdf", size: "2.5 MB" }
-            ],
-            updated_at: "Il y a 30 min",
-        },
-        {
-            id: 3,
-            title: "Mettre à jour le site web",
-            description: "Mettre à jour les pages principales du site web.",
-            status: "achieved",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "22 Mai 2025",
-            end_date: "23 Mai 2025",
-            priority: "Urgent",
-            attachments: [],
-            updated_at: "Hier",
-        },
-        {
-            id: 4,
-            title: "Corriger les erreurs dans l'application",
-            description: "Corriger les bugs signalés dans l'application mobile.",
-            status: "reported",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "28 Mai 2025",
-            priority: "Optionnel",
-            attachments: [
-                { name: "bug-report.pdf", size: "0.8 MB" }
-            ],
-            updated_at: "Il y a 2 h",
-        },
-        {
-            id: 5,
-            title: "Créer une nouvelle base de données",
-            description: "Créer une base de données pour les nouveaux utilisateurs.",
-            status: "no",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "25 Mai 2025",
-            end_date: "01 Juin 2025",
-            priority: "Secondaire",
-            attachments: [],
-            updated_at: "Aujourd'hui",
-        },
-        {
-            id: 6,
-            title: "Déployer l'application",
-            description: "Déployer la nouvelle version de l'application sur le serveur.",
-            status: "pending",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "24 Mai 2025",
-            end_date: "29 Mai 2025",
-            priority: "Secondaire",
-            attachments: [],
-            updated_at: "Il y a 45 min",
-        },
-        {
-            id: 7,
-            title: "Vérifier la compatibilité mobile",
-            description: "Tester la compatibilité de l'application sur différents appareils mobiles.",
-            status: "achieved",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "24 Mai 2025",
-            priority: "Optionnel",
-            attachments: [
-                { name: "mobile-test.pdf", size: "1.0 MB" }
-            ],
-            updated_at: "Aujourd'hui",
-        },
-        {
-            id: 8,
-            title: "Ajouter un système de notifications",
-            description: "Implémenter un système de notifications push pour les utilisateurs.",
-            status: "reported",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "22 Mai 2025",
-            end_date: "27 Mai 2025",
-            priority: "Urgent",
-            attachments: [],
-            updated_at: "Il y a 3 h",
-        },
-    ])
+    const [tasks, setTasks] = useState([])
+    const [loading, setLoading] = useState(true)
+
+    // Récupérer les tâches depuis l'API
+    const fetchTasks = async () => {
+        try {
+            const token = localStorage.getItem('access_token')
+            const response = await axios.get('http://localhost:8000/api/tasks/', {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            const normalizedTasks = response.data.map(task => ({
+                ...task,
+                priority: task.priority.toLowerCase(),
+            }))
+            setTasks(normalizedTasks)
+            setLoading(false)
+        } catch (error) {
+            console.error('Erreur lors du chargement des tâches:', error)
+            setLoading(false)
+        }
+    }
+
+    useEffect(() => {
+        fetchTasks()
+    }, [])
+
+    // Mettre à jour le statut sur le serveur et recharger les tâches
+    const updateTaskStatus = async (taskId, newStatus) => {
+        try {
+            const token = localStorage.getItem('access_token')
+            const response = await axios.patch(`http://localhost:8000/api/tasks/${taskId}/`, {
+                status: newStatus,
+            }, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            // Mettre à jour l'état avec la réponse du serveur
+            setTasks(tasks.map(task =>
+                task.id === parseInt(taskId) ? response.data : task
+            ))
+            console.log(`Statut de la tâche ${taskId} mis à jour à ${newStatus}`)
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du statut:', error)
+        }
+    }
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -169,41 +68,26 @@ const ProjectIntern = () => {
     }
 
     const pageTransition = {
-        duration: 0.5,  
+        duration: 0.5,
     }
 
-    const items = [
-        { label: 'Projet' },
-        { label: 'Instage' }
-    ]
+    const items = [{ label: 'Projet' }, { label: 'Instage' }]
 
-    const back = { 
-        icon: 'pi pi-arrow-left', 
-        command: () => {
-            navigate('/intern/me')
-        }
+    const back = {
+        icon: 'pi pi-arrow-left',
+        command: () => navigate('/intern/me'),
     }
 
     const collaborators = [
-        {
-            id: 1,
-            lastname: "John",
-            firstname: "Doe",
-            avatar: imgIntern,
-        },
-        {
-            id: 2,
-            lastname: "Jane",
-            firstname: "Smith",
-            avatar: imgIntern,
-        },
+        { id: 1, lastname: 'John', firstname: 'Doe', avatar: imgIntern },
+        { id: 2, lastname: 'Jane', firstname: 'Smith', avatar: imgIntern },
     ]
 
     const statusCategories = [
-        { title: "To-do List", status: "no" },
-        { title: "En cours", status: "pending" },
-        { title: "Terminé", status: "achieved" },
-        { title: "À corriger", status: "reported" }
+        { title: 'To-do List', status: 'no' },
+        { title: 'En cours', status: 'pending' },
+        { title: 'Terminé', status: 'achieved' },
+        { title: 'À corriger', status: 'reported' },
     ]
 
     const handleTaskClick = (task) => {
@@ -213,21 +97,21 @@ const ProjectIntern = () => {
 
     const getColumnColor = (status) => {
         switch (status) {
-            case "no":
-                return "border-gray-300"
-            case "pending":
-                return "border-yellow-200"
-            case "achieved":
-                return "border-green-200"
-            case "reported":
-                return "border-red-200"
+            case 'no':
+                return 'border-gray-300'
+            case 'pending':
+                return 'border-yellow-200'
+            case 'achieved':
+                return 'border-green-200'
+            case 'reported':
+                return 'border-red-200'
             default:
-                return "border-gray-300"
+                return 'border-gray-300'
         }
     }
 
     const handleDragStart = (e, task) => {
-        e.dataTransfer.setData("taskId", task.id)
+        e.dataTransfer.setData('taskId', task.id)
         setDraggedTask(task)
         e.currentTarget.classList.add('opacity-50', 'scale-95')
     }
@@ -239,14 +123,22 @@ const ProjectIntern = () => {
 
     const handleDrop = (e, newStatus) => {
         e.preventDefault()
-        const taskId = e.dataTransfer.getData("taskId")
-        const updatedTasks = tasks.map(task => 
-            task.id === parseInt(taskId) 
-                ? { ...task, status: newStatus, updated_at: "Aujourd'hui" }
+        const taskId = e.dataTransfer.getData('taskId')
+        // Mettre à jour immédiatement côté client
+        const updatedTasks = tasks.map((task) =>
+            task.id === parseInt(taskId)
+                ? {
+                      ...task,
+                      status: newStatus,
+                      updated_at: 'Aujourd\'hui',
+                  }
                 : task
         )
         setTasks(updatedTasks)
         setDraggedTask(null)
+
+        // Mettre à jour le statut sur le serveur
+        updateTaskStatus(taskId, newStatus)
     }
 
     const handleDragOver = (e) => {
@@ -255,12 +147,26 @@ const ProjectIntern = () => {
 
     const handleDragEnter = (e) => {
         e.preventDefault()
-        e.currentTarget.classList.add('bg-gray-50', 'border-2', 'border-dashed', 'border-indigo-400')
+        e.currentTarget.classList.add(
+            'bg-gray-50',
+            'border-2',
+            'border-dashed',
+            'border-indigo-400'
+        )
     }
 
     const handleDragLeave = (e) => {
         e.preventDefault()
-        e.currentTarget.classList.remove('bg-gray-50', 'border-2', 'border-dashed', 'border-indigo-400')
+        e.currentTarget.classList.remove(
+            'bg-gray-50',
+            'border-2',
+            'border-dashed',
+            'border-indigo-400'
+        )
+    }
+
+    if (loading) {
+        return <div>Chargement des tâches...</div>
     }
 
     return (
@@ -272,127 +178,139 @@ const ProjectIntern = () => {
             transition={pageTransition}
             className="px-16 mb-16"
         >
-            <section className='mt-4 flex justify-between items-center'>
+            <section className="mt-4 flex justify-between items-center">
                 <div>
-                    <div className='flex items-center space-x-4'>
-                        <BreadCrumb 
+                    <div className="flex items-center space-x-4">
+                        <BreadCrumb
                             model={items}
                             home={back}
-                            className='!border-none !font-semibold'
+                            className="!border-none !font-semibold"
                             pt={{
-                                icon: "!text-indigo-400",
-                                label: "!text-indigo-400",
-                                separator: "!text-indigo-400",
+                                icon: '!text-indigo-400',
+                                label: '!text-indigo-400',
+                                separator: '!text-indigo-400',
                             }}
                         />
-                        <Tag 
-                            value="En cours" 
-                            className='!font-poppins'
-                        />
+                        <Tag value="En cours" className="!font-poppins" />
                     </div>
 
-                    <div className='ml-12 flex items-center space-x-28'>
+                    <div className="ml-12 flex items-center space-x-28">
                         <AvatarGroup>
                             {collaborators.map((collaborator) => (
                                 <Avatar
-                                    key={collaborator.id} 
+                                    key={collaborator.id}
                                     image={collaborator.avatar}
-                                    shape='circle'
-                                    size='large'
+                                    shape="circle"
+                                    size="large"
                                 />
                             ))}
                         </AvatarGroup>
 
-                        <p className='text-sm text-gray-500'>
-                            Aujourd'hui - le 23 Mai 2025
+                        <p className="text-sm text-gray-500">
+                            Aujourd'hui - le 07 Juin 2025
                         </p>
 
-                        <div className='flex items-center gap-x-4'>
-                            <Button 
+                        <div className="flex items-center gap-x-4">
+                            <Button
                                 icon="pi pi-list"
-                                label='Liste'
-                                className='!h-8 !bg-gray-200 hover:!bg-gray-300 !text-gray-600 !border-none'
+                                label="Liste"
+                                className="!h-8 !bg-gray-200 hover:!bg-gray-300 !text-gray-600 !border-none"
                             />
-                            <Button 
+                            <Button
                                 icon="pi pi-objects-column"
-                                label='Kanban'
-                                className='!h-8'
+                                label="Kanban"
+                                className="!h-8"
                             />
                         </div>
-                    </div> 
+                    </div>
                 </div>
 
                 <Button
-                    icon="pi pi-plus" 
-                    label='Ajouter une tâche'
-                    className='!h-12 !font-poppins'
+                    icon="pi pi-plus"
+                    label="Ajouter une tâche"
+                    className="!h-12 !font-poppins"
                 />
             </section>
 
-            <section className='mt-10 grid grid-cols-4 gap-8'>
+            <section className="mt-10 grid grid-cols-4 gap-8">
                 {statusCategories.map((category) => {
-                    const filteredTasks = tasks.filter(task => task.status === category.status)
+                    const filteredTasks = tasks.filter(
+                        (task) => task.status === category.status
+                    )
                     return (
-                        <motion.div 
+                        <motion.div
                             key={category.status}
                             onDrop={(e) => handleDrop(e, category.status)}
                             onDragOver={handleDragOver}
                             onDragEnter={handleDragEnter}
                             onDragLeave={handleDragLeave}
-                            className={`min-h-[300px] p-4 rounded-lg border-2 ${getColumnColor(category.status)} transition-all duration-300`}
+                            className={`min-h-[300px] p-4 rounded-lg border-2 ${getColumnColor(
+                                category.status
+                            )} transition-all duration-300`}
                             initial={{ scale: 1 }}
-                            animate={{ scale: draggedTask && draggedTask.status !== category.status ? 1.02 : 1 }}
+                            animate={{
+                                scale:
+                                    draggedTask &&
+                                    draggedTask.status !== category.status
+                                        ? 1.02
+                                        : 1,
+                            }}
                         >
-                            <div className='flex justify-between items-center mb-4'>
-                                <h3 className='text-xl font-semibold text-gray-700'>
+                            <div className="flex justify-between items-center mb-4">
+                                <h3 className="text-xl font-semibold text-gray-700">
                                     {category.title}
-                                    <Tag value={filteredTasks.length} className='ml-4'/>
+                                    <Tag value={filteredTasks.length} className="ml-4" />
                                 </h3>
 
-                                <div className='flex justify-end items-center gap-6'>
-                                    <i 
-                                        className='pi pi-plus cursor-pointer text-indigo-400'
+                                <div className="flex justify-end items-center gap-6">
+                                    <i
+                                        className="pi pi-plus cursor-pointer text-indigo-400"
                                         title="Ajouter"
                                     />
-                                    <i 
-                                        className='pi pi-ellipsis-h cursor-pointer hover:text-indigo-400'
+                                    <i
+                                        className="pi pi-ellipsis-h cursor-pointer hover:text-indigo-400"
                                         title="Options"
                                     />
                                 </div>
                             </div>
 
-                            <div className='mt-2'>
+                            <div className="mt-2">
                                 {filteredTasks.map((task) => (
-                                    <motion.div 
+                                    <motion.div
                                         key={task.id}
                                         draggable
                                         onDragStart={(e) => handleDragStart(e, task)}
                                         onDragEnd={handleDragEnd}
-                                        className='bg-gray-100 mb-4 shadow-md rounded-lg p-4 cursor-grab hover:bg-gray-200 transition-all duration-300'
+                                        className="bg-gray-100 mb-4 shadow-md rounded-lg p-4 cursor-grab hover:bg-gray-200 transition-all duration-300"
                                         onClick={() => handleTaskClick(task)}
                                         initial={{ opacity: 1, y: 0 }}
-                                        animate={{ opacity: draggedTask?.id === task.id ? 0.5 : 1 }}
+                                        animate={{
+                                            opacity:
+                                                draggedTask?.id === task.id ? 0.5 : 1,
+                                        }}
                                         whileHover={{ scale: 1.03 }}
-                                        whileDrag={{ scale: 1.05, boxShadow: "0 8px 16px rgba(0,0,0,0.2)" }}
+                                        whileDrag={{
+                                            scale: 1.05,
+                                            boxShadow: '0 8px 16px rgba(0,0,0,0.2)',
+                                        }}
                                     >
-                                        <h5 className='font-medium text-gray-600'>
+                                        <h5 className="font-medium text-gray-600">
                                             {task.title}
                                         </h5>
-                                        
-                                        <div className='flex justify-between items-center'>
-                                            <div className='mt-8 flex items-center space-x-4'>
-                                                <img 
-                                                    src={task.users.avatar} 
-                                                    className='w-8 h-8 rounded-full'
+
+                                        <div className="flex justify-between items-center">
+                                            <div className="mt-8 flex items-center space-x-4">
+                                                <img
+                                                    src={task.users.avatar}
+                                                    className="w-8 h-8 rounded-full"
+                                                    alt={`${task.users.firstname} ${task.users.lastname}`}
                                                 />
-                                                <p className='text-xs'>
-                                                    {task.updated_at}
-                                                </p>
+                                                <p className="text-xs">{task.updated_at}</p>
                                             </div>
 
-                                            <i 
-                                                className='pi pi-paperclip text-gray-400 mt-6 cursor-pointer hover:text-indigo-400'
-                                                title='Pièces jointes'
+                                            <i
+                                                className="pi pi-paperclip text-gray-400 mt-6 cursor-pointer hover:text-indigo-400"
+                                                title="Pièces jointes"
                                             />
                                         </div>
                                     </motion.div>
@@ -404,7 +322,7 @@ const ProjectIntern = () => {
             </section>
 
             <Dialog
-                header={`Modifié récemment`}
+                header="Modifié récemment"
                 visible={dialogVisible}
                 style={{ width: '50vw' }}
                 onHide={() => setDialogVisible(false)}
@@ -413,18 +331,16 @@ const ProjectIntern = () => {
                 {selectedTask && (
                     <div className="p-4 pt-0">
                         <div>
-                            <div className='flex justify-between items-center'>
+                            <div className="flex justify-between items-center">
                                 <h3 className="text-xl font-semibold text-indigo-500">
                                     {selectedTask.title}
                                 </h3>
-                                <div className='pi pi-ellipsis-v cursor-pointer hover:text-indigo-400' />
+                                <div className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-400" />
                             </div>
 
-                            <hr className='border-b border-gray-200 mt-4 mb-6'/>
+                            <hr className="border-b border-gray-200 mt-4 mb-6" />
 
-                            <p className="text-gray-600">
-                                {selectedTask.description}
-                            </p>
+                            <p className="text-gray-600">{selectedTask.description}</p>
                         </div>
 
                         <div className="mt-8 grid grid-cols-[35%_65%]">
@@ -459,10 +375,7 @@ const ProjectIntern = () => {
                                 <i className="pi pi-exclamation-circle mr-2" />
                                 Priorité
                             </h3>
-                            <Tag 
-                                value={selectedTask.priority}
-                                className='!w-24'
-                            />
+                            <Tag value={selectedTask.priority} className="!w-24" />
                         </div>
 
                         {selectedTask.attachments.length > 0 && (
@@ -472,19 +385,15 @@ const ProjectIntern = () => {
                                     Attachment ({selectedTask.attachments.length})
                                 </h3>
 
-                                <div className='mt-3'>
+                                <div className="mt-3">
                                     {selectedTask.attachments.map((attachment, index) => (
-                                        <div 
-                                            key={index} 
+                                        <div
+                                            key={index}
                                             className="flex items-center text-sm space-x-3 p-4 rounded-md border border-gray-200"
                                         >
                                             <i className="pi pi-file-pdf text-indigo-500" />
-                                            <p className="text-gray-600">
-                                                {attachment.name}
-                                            </p>
-                                            <p className="text-gray-400 text-xs">
-                                                {attachment.size}
-                                            </p>
+                                            <p className="text-gray-600">{attachment.name}</p>
+                                            <p className="text-gray-400 text-xs">{attachment.size}</p>
                                         </div>
                                     ))}
                                 </div>

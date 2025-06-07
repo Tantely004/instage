@@ -632,3 +632,86 @@ class TaskCalendarAPIView(generics.ListAPIView):
             for task in queryset
         ]
         return Response(events)
+
+class TaskListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        # Récupérer toutes les tâches depuis la base de données
+        tasks = Task.objects.all().order_by('start_date')
+        
+        # Mapper les statuts de la base de données aux statuts de l'interface
+        status_mapping = {
+            'open': 'no',
+            'progressing': 'pending',
+            'completed': 'achieved',
+            'cancelled': 'reported'
+        }
+        
+        # Préparer les données pour l'interface
+        task_data = [
+            {
+                'id': task.id,
+                'title': task.title,
+                'description': task.description,
+                'status': status_mapping.get(task.status, 'no'),  # Utiliser le mapping
+                'users': {
+                    'id': 1,  # Placeholder, à remplacer par une logique réelle si nécessaire
+                    'lastname': 'Doe',
+                    'firstname': 'John',
+                    'avatar': '/path/to/avatar.png'  # Placeholder, à ajuster
+                },
+                'start_date': task.start_date.strftime('%d %b %Y'),
+                'end_date': task.end_date.strftime('%d %b %Y') if task.end_date else None,
+                'priority': task.priority,
+                'attachments': [],  # Placeholder, à remplir si des pièces jointes sont gérées
+                'updated_at': 'Aujourd\'hui'  # Placeholder, à ajuster avec une logique réelle
+            }
+            for task in tasks
+        ]
+        
+        return Response(task_data, status=status.HTTP_200_OK)
+
+class TaskUpdateAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def patch(self, request, task_id):
+        try:
+            task = Task.objects.get(id=task_id)
+        except Task.DoesNotExist:
+            return Response({"message": "Tâche non trouvée"}, status=status.HTTP_404_NOT_FOUND)
+
+        status_reverse_mapping = {
+            'no': 'open',
+            'pending': 'progressing',
+            'achieved': 'completed',
+            'reported': 'cancelled'
+        }
+        
+        new_status = request.data.get('status')
+        if new_status not in status_reverse_mapping:
+            return Response({"message": "Statut invalide"}, status=status.HTTP_400_BAD_REQUEST)
+
+        task.status = status_reverse_mapping[new_status]
+        task.save()
+        
+        # Retourner les données mises à jour avec le statut mappé
+        updated_task = {
+            'id': task.id,
+            'title': task.title,
+            'description': task.description,
+            'status': new_status,  # Retourner le statut de l'interface
+            'users': {
+                'id': 1,
+                'lastname': 'Doe',
+                'firstname': 'John',
+                'avatar': '/path/to/avatar.png'
+            },
+            'start_date': task.start_date.strftime('%d %b %Y'),
+            'end_date': task.end_date.strftime('%d %b %Y') if task.end_date else None,
+            'priority': task.priority,
+            'attachments': [],
+            'updated_at': 'Aujourd\'hui'
+        }
+        
+        return Response(updated_task, status=status.HTTP_200_OK)

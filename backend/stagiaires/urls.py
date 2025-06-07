@@ -12,4 +12,6 @@ urlpatterns = [
     path('generationtheme/', GenerationThemeAPIView.as_view(), name='generation-theme'),
     path('plannings/create/', CreatePlanningAPIView.as_view(), name='create-planning'),
     path('taskcalendar/', TaskCalendarAPIView.as_view(), name='taskcalendar'),
+    path('tasks/', TaskListAPIView.as_view(), name='task-list'),
+    path('tasks/<int:task_id>/', TaskUpdateAPIView.as_view(), name='task-update'),
 ]
