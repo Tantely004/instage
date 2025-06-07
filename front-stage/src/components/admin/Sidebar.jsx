@@ -14,8 +14,6 @@ const SidebarAdmin = ({ collapsed, setCollapsed }) => {
         { label: "Utilisateurs", icon: "pi pi-users", path: "/admin/users" },
         { label: "Calendrier", icon: "pi pi-calendar", path: "/admin/planning" },
         { label: "Suivi", icon: "pi pi-chart-line", path: "/admin/follow-up" },
-        { label: "Modèles", icon: "pi pi-folder", path: "/Modèles" },
-        { label: "Évaluations", icon: "pi pi-star", path: "/evaluations" }
     ]
 
     const toggleSidebar = () => setCollapsed(!collapsed)
