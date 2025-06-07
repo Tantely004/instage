@@ -203,13 +203,13 @@ const AdminAssignment = () => {
                                 </p>
 
                                 <Dropdown
-                                        value={selectedProject} 
-                                        options={projects}
-                                        optionLabel="title" 
-                                        onChange={(e) => setSelectedProject(e.target.value)} 
-                                        placeholder="Sélectionner le projet" 
-                                        className='!font-poppins'
-                                        panelClassName='!font-poppins'
+                                    value={selectedProject} 
+                                    options={projects}
+                                    optionLabel="title" 
+                                    onChange={(e) => setSelectedProject(e.target.value)} 
+                                    placeholder="Sélectionner le projet" 
+                                    className='!font-poppins'
+                                    panelClassName='!font-poppins'
                                 />
                             </div>
 
@@ -221,8 +221,50 @@ const AdminAssignment = () => {
                     </TabPanel>
 
                     <TabPanel header="Projet">
-                        <form>
-                            
+                        <form className="mt-3">
+                            <div className="grid grid-cols-2 items-center gap-8">
+                                <div className="flex flex-col space-y-3">
+                                    <label>
+                                        <i className="pi pi-asterisk !text-xs text-indigo-400 mr-3"/>
+                                        Sélectionner un encadreur pour la réalisation de projet
+                                    </label>
+                                    <Dropdown
+                                        value={selectedSupervisor}      
+                                        options={supervisors} 
+                                        onChange={(e) => setSelectedSupervisor(e.target.value)} 
+                                        placeholder="Sélectionner" 
+                                        itemTemplate={supervisorTemplate}
+                                        className='!font-poppins'
+                                        panelClassName='!font-poppins'
+                                    />
+                                </div>
+
+                                <div className="flex flex-col space-y-3">
+                                    <label>
+                                        <i className="pi pi-asterisk !text-xs text-indigo-400 mr-3"/>
+                                        Sélectionner le projet à assigner
+                                    </label>
+                                    <Dropdown
+                                        value={selectedProject} 
+                                        options={projects}
+                                        optionLabel="title" 
+                                        onChange={(e) => setSelectedProject(e.target.value)} 
+                                        placeholder="Sélectionner le projet" 
+                                        className='!font-poppins'
+                                        panelClassName='!font-poppins'
+                                    />
+                                </div>
+
+                                <p className="text-sm col-span-2">
+                                    <i className="pi pi-info-circle mr-2"/>
+                                    Dans le cadre de ses responsabilités, l’encadreur professionnel sera assigné à ce projet avec pour mission d’accompagner activement le stagiaire dans sa mise en œuvre. Il devra veiller à la bonne compréhension des objectifs du projet, encadrer les livrables attendus, et superviser les différentes étapes jusqu’à la finalisation
+                                </p>
+                            </div>
+
+                            <Button 
+                                label="Valider"
+                                className="!mt-12 !font-poppins !h-10 !flex !justify-end !items-center !w-32 !ml-auto"
+                            />
                         </form>
                     </TabPanel>
                 </TabView>
