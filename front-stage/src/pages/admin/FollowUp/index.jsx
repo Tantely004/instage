@@ -3,8 +3,11 @@ import { motion } from "framer-motion"
 import { Button } from "primereact/button"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
+import { useNavigate } from "react-router-dom"
 
 const FollowUpAdmin = () => {
+    const navigate = useNavigate()
+
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
@@ -14,7 +17,6 @@ const FollowUpAdmin = () => {
     const pageTransition = {
         duration: 0.5,
     }
-
 
     const interns = [
         {
@@ -158,7 +160,7 @@ const FollowUpAdmin = () => {
             exit="out"
             variants={pageVariants}
             transition={pageTransition} 
-            className={`mb-12 w-[75.5vw]`}
+            className={`mb-12 max-w-[89vw]`}
         >
             <section className="flex justify-between">
                 <div>
@@ -175,6 +177,7 @@ const FollowUpAdmin = () => {
                     icon="pi pi-plus"
                     label="Assigner"
                     className="!h-10"
+                    onClick={() => navigate('/admin/follow-up/assign')}
                 />
             </section>
 

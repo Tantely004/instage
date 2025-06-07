@@ -270,6 +270,7 @@ const CalendarSupervisor = () => {
                     <Button 
                         label='Voir tout'
                         className='!mt-8 !bg-transparent !border-none !p-0 !flex !justify-center !items-center !font-poppins !text-indigo-400'
+                        onClick={() => navigate('/supervisor/planning/received-list')}
                     />
                 </div>
             </section>
