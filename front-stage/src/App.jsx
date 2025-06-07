@@ -18,6 +18,7 @@ import Users from './pages/admin/users'
 import CreateUser from './pages/admin/users/Create'
 import FollowUpAdmin from './pages/admin/FollowUp'
 import AdminAssignment from './pages/admin/FollowUp/Assignment'
+import PlanningAdmin from './pages/admin/Planning'
 
 function App() {
   const [loading, setLoading] = useState(false)
@@ -61,6 +62,7 @@ function App() {
                 <Route index path="users/create" element={<CreateUser />} />
                 <Route index path="follow-up" element={<FollowUpAdmin />} />
                 <Route index path="follow-up/assign" element={<AdminAssignment />} />
+                <Route index path="planning" element={<PlanningAdmin />} />
               </Route>
             </Routes>
         </div>
