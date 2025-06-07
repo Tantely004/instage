@@ -14,4 +14,5 @@ urlpatterns = [
     path('taskcalendar/', TaskCalendarAPIView.as_view(), name='taskcalendar'),
     path('tasks/', TaskListAPIView.as_view(), name='task-list'),
     path('tasks/<int:task_id>/', TaskUpdateAPIView.as_view(), name='task-update'),
+    path('internship/detail/', InternshipDetailAPIView.as_view(), name='internship-detail'),
 ]

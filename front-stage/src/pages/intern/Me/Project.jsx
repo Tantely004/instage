@@ -166,7 +166,7 @@ const ProjectIntern = () => {
     }
 
     if (loading) {
-        return <div>Chargement des tâches...</div>
+        return <div></div>
     }
 
     return (

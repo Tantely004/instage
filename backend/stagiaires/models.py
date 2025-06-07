@@ -98,6 +98,10 @@ class InternshipStatusChoices(models.TextChoices):
     COMPLETED = 'completed', 'Completed'
     CANCELLED = 'cancelled', 'Cancelled'
 
+class InternshipTypeChoices(models.TextChoices):
+    HIRING = 'hiring', 'Hiring'
+    ACADEMIC = 'academic', 'Academic'
+
 class Internship(models.Model):
     id = models.AutoField(primary_key=True)
     start_date = models.DateField()
@@ -105,6 +109,11 @@ class Internship(models.Model):
     intern = models.ForeignKey(Intern, on_delete=models.CASCADE)
     instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE)
     theme = models.CharField(max_length=200)
+    type = models.CharField(
+        max_length=20,
+        choices=InternshipTypeChoices.choices,
+        default=InternshipTypeChoices.ACADEMIC,
+    )
     status = models.CharField(
         max_length=20,
         choices=InternshipStatusChoices.choices,

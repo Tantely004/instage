@@ -715,3 +715,68 @@ class TaskUpdateAPIView(APIView):
         }
         
         return Response(updated_task, status=status.HTTP_200_OK)
+
+class InternshipDetailAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Récupérer l'utilisateur connecté et son profil Intern
+            user = request.user
+            intern = Intern.objects.get(user=user)
+
+            # Récupérer l'internship actif de l'intern
+            internship = Internship.objects.filter(intern=intern, status='progressing').first()
+            if not internship:
+                return Response({"message": "Aucun stage en cours trouvé"}, status=status.HTTP_404_NOT_FOUND)
+
+            # Récupérer l'instructeur associé
+            instructor = internship.instructor
+            instructor_data = {
+                "full_name": f"{instructor.user.name} {instructor.user.firstname}",
+                "management": f"{instructor.management}",
+                "position": instructor.position
+            }
+
+            # Calculer la durée du stage
+            start_date = internship.start_date
+            end_date = internship.end_date
+            delta = end_date - start_date
+            total_days = delta.days
+            months = total_days // 30  # Approximation d'un mois = 30 jours
+            remaining_days = total_days % 30
+            duration = f"{months} mois"
+            if remaining_days > 0:
+                duration += f" et {remaining_days} jours"
+
+            # Traduire le type de stage
+            internship_type = "Stage académique" if internship.type == "academic" else "Stage d'embauche"
+
+            # Récupérer le projet actuel
+            project = Project.objects.filter(internship=internship).first()
+            project_data = {
+                "title": project.title if project else "Instage",
+                "progress": 43,  # Placeholder, à remplacer par une logique réelle si nécessaire
+                "created_at": "31/05/2025",  # Placeholder, à ajuster
+                "total_tasks": 5  # Placeholder, à ajuster
+            }
+
+            # Préparer la réponse
+            data = {
+                "intern": {
+                    "full_name": f"{user.name} {user.firstname}",
+                    "domain": intern.sector,
+                    "period": f"{start_date.strftime('%d/%m/%Y')} - {end_date.strftime('%d/%m/%Y')}",
+                    "duration": duration,
+                    "type": internship_type,
+                    "avatar": user.image.url if user.image else None
+                },
+                "instructor": instructor_data,
+                "collaborators": [],  # Vide car aucun collaborateur dans la base
+                "project": project_data
+            }
+            return Response(data, status=status.HTTP_200_OK)
+        except Intern.DoesNotExist:
+            return Response({"message": "Profil d'intern non trouvé"}, status=status.HTTP_404_NOT_FOUND)
+        except Exception as e:
+            return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
