@@ -12,7 +12,7 @@ const SidebarAdmin = ({ collapsed, setCollapsed }) => {
     const menuItems = [
         { label: "Tableau de bord", icon: "pi pi-home", path: "/admin/dashboard" },
         { label: "Utilisateurs", icon: "pi pi-users", path: "/admin/users" },
-        { label: "Planning", icon: "pi pi-calendar", path: "/admin/planning" },
+        { label: "Calendrier", icon: "pi pi-calendar", path: "/admin/planning" },
         { label: "Suivi", icon: "pi pi-chart-line", path: "/admin/follow-up" },
         { label: "Modèles", icon: "pi pi-folder", path: "/Modèles" },
         { label: "Évaluations", icon: "pi pi-star", path: "/evaluations" }
