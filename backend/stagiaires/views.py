@@ -103,7 +103,7 @@ class UserDetailAPIView(APIView): #Vue de récupération des données utilisateu
             "detail_role": detail_role
         }, status=status.HTTP_200_OK)
 
-class DashboardInternAPIView(APIView): #Vue de récupération et traitement des données du DashboardIntern
+class DashboardInternAPIView(APIView):  # Vue de récupération et traitement des données du DashboardIntern
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -130,8 +130,8 @@ class DashboardInternAPIView(APIView): #Vue de récupération et traitement des 
         documents = Document.objects.filter(id__in=document_ids)
         documents_count = documents.count()
 
-        # 3. toDo: Nombre de tâches en attente
-        to_do_count = AssignmentTask.objects.filter(intern=intern, status='pending').count()
+        # 3. toDo: Nombre de tâches avec status 'open'
+        to_do_count = Task.objects.filter(status='open').count()  # Changé de AssignmentTask à Task
 
         # 4. cumulatedHour: Total des heures de travail entre start_date et aujourd'hui
         if internship:
@@ -149,17 +149,16 @@ class DashboardInternAPIView(APIView): #Vue de récupération et traitement des 
         four_weeks_ago = today - timedelta(days=28)
         twelve_months_ago = today - timedelta(days=365)
 
-        # Statistiques pour toDoCompleted
-        completed_tasks = AssignmentTask.objects.filter(
-            intern=intern,
+        # Statistiques pour toDoCompleted (tâches terminées)
+        completed_tasks = Task.objects.filter(
             status='completed',
-            completed_date__gte=four_weeks_ago
+            end_date__gte=four_weeks_ago
         )
         weekly_tasks = [0] * 4  # 4 dernières semaines
         monthly_tasks = [0] * 12  # 12 derniers mois
         for task in completed_tasks:
-            if task.completed_date:
-                days_diff = (today - task.completed_date.date()).days
+            if task.end_date:
+                days_diff = (today - task.end_date).days
                 if days_diff < 7:
                     weekly_tasks[0] += 1
                 elif days_diff < 14:
@@ -168,9 +167,7 @@ class DashboardInternAPIView(APIView): #Vue de récupération et traitement des 
                     weekly_tasks[2] += 1
                 elif days_diff < 28:
                     weekly_tasks[3] += 1
-                month_index = (12 + task.completed_date.month - today.month
-
-) % 12
+                month_index = (12 + task.end_date.month - today.month) % 12
                 monthly_tasks[month_index] += 1
 
         # Statistiques pour document
@@ -218,7 +215,7 @@ class DashboardInternAPIView(APIView): #Vue de récupération et traitement des 
             "statistics": statistics,
             "supervisions": supervisions
         }, status=status.HTTP_200_OK)
-    
+        
 class DashboardInstructorAPIView(APIView): #Vue de récupération et traitement des données du DashboardSupervisor
     permission_classes = [IsAuthenticated]
 
@@ -818,3 +815,78 @@ class InternshipDetailAPIView(APIView): #Vue de récupération et affichage des 
             return Response({"message": "Profil d'intern non trouvé"}, status=status.HTTP_404_NOT_FOUND)
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+class UserListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Vérifier que l'utilisateur est un administrateur
+            user = request.user
+            if user.role != 'administrator':
+                return Response(
+                    {"message": "Accès réservé aux administrateurs"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Récupérer tous les utilisateurs et leurs profils spécifiques
+            users_data = {
+                "interns": [],
+                "supervisors": [],
+                "admins": []
+            }
+
+            # Récupérer les stagiaires
+            interns = Intern.objects.all()
+            for intern in interns:
+                user_data = UserSerializer(intern.user).data
+                intern_data = InternSerializer(intern).data
+                users_data["interns"].append({
+                    "id": user_data.get("identifier", ""),
+                    "lastname": user_data.get("name", ""),
+                    "firstname": user_data.get("firstname", ""),
+                    "avatar": user_data.get("image", ""),
+                    "email": user_data.get("mail", ""),
+                    "etablishment": intern_data.get("etablishment", ""),
+                    "domain": intern_data.get("sector", ""),
+                    "level": intern_data.get("level", ""),
+                })
+
+            # Récupérer les encadrants
+            instructors = Instructor.objects.all()
+            for instructor in instructors:
+                user_data = UserSerializer(instructor.user).data
+                instructor_data = InstructorSerializer(instructor).data
+                users_data["supervisors"].append({
+                    "id": user_data.get("identifier", ""),
+                    "lastname": user_data.get("name", ""),
+                    "firstname": user_data.get("firstname", ""),
+                    "avatar": user_data.get("image", ""),
+                    "email": user_data.get("mail", ""),
+                    "management": instructor_data.get("management", ""),
+                    "department": instructor_data.get("department", ""),
+                    "position": instructor_data.get("position", ""),
+                })
+
+            # Récupérer les administrateurs
+            administrators = Administrator.objects.all()
+            for admin in administrators:
+                user_data = UserSerializer(admin.user).data
+                admin_data = AdministratorSerializer(admin).data
+                users_data["admins"].append({
+                    "id": user_data.get("identifier", ""),
+                    "lastname": user_data.get("name", ""),
+                    "firstname": user_data.get("firstname", ""),
+                    "avatar": user_data.get("image", ""),
+                    "email": user_data.get("mail", ""),
+                    "management": admin_data.get("management", ""),
+                    "department": admin_data.get("department", ""),
+                    "position": admin_data.get("position", ""),
+                })
+
+            return Response(users_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )

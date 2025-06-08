@@ -72,7 +72,7 @@ class AssignmentTaskSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = AssignmentTask
-        fields = ['id', 'task', 'status', 'priority']
+        fields = "__all__"
 
 class WorkHoursLogSerializer(serializers.ModelSerializer):
     class Meta:

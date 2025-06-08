@@ -234,30 +234,11 @@ class Task(models.Model):
 # ===================== #
 #   ASSIGNMENT TASK     #
 # ===================== #
-class AssignmentTaskStatusChoices(models.TextChoices):
-    PENDING = 'pending', 'Pending'
-    PROGRESSING = 'progressing', 'Progressing'
-    COMPLETED = 'completed', 'Completed'
-
-class AssignmentTaskPriorityChoices(models.TextChoices):
-    LOW = 'low', 'Low'
-    MEDIUM = 'medium', 'Medium'
-    HIGH = 'high', 'High'
-
 class AssignmentTask(models.Model):
     id = models.AutoField(primary_key=True)
     intern = models.ForeignKey(Intern, on_delete=models.CASCADE)
-    status = models.CharField(
-        max_length=20,
-        choices=AssignmentTaskStatusChoices.choices,
-        default=AssignmentTaskStatusChoices.PENDING,
-    )
-    priority = models.CharField(
-        max_length=20,
-        choices=AssignmentTaskPriorityChoices.choices,
-        default=AssignmentTaskPriorityChoices.MEDIUM,
-    )
     completed_date = models.DateTimeField(null=True, blank=True)
+    task = models.ForeignKey(Task, on_delete=models.CASCADE, null=True)
 
     def __str__(self):
         return f"AssignmentTask: {self.task.title} for {self.intern.user.identifier}"

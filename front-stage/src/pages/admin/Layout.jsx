@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Outlet } from "react-router-dom";
+import { Outlet, useNavigate } from "react-router-dom";
 import { IconField } from "primereact/iconfield";
 import { InputIcon } from "primereact/inputicon";
 import { InputText } from "primereact/inputtext";
@@ -13,20 +13,22 @@ import imgSupervisor from "../../assets/images/img_profile_supervisor.png";
 const LayoutAdmin = () => {
     const [collapsed, setCollapsed] = useState(false);
     const { fetchUserData, userData, loading, error } = useToolbar(); // Utiliser le hook
+    const navigate = useNavigate()
 
     const profileMenu = useRef(null);
     const profileItems = [
         {
             label: 'Mon profil',
             icon: 'pi pi-user',
-        },
-        {
-            label: 'Paramètres',
-            icon: 'pi pi-cog',
+            command: () => navigate('/administrator/profile'),
         },
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
+            command: () => {
+                localStorage.removeItem('access_token');
+                navigate('/login');
+            },
         },
     ];
 
