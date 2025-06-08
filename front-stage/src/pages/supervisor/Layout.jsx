@@ -20,17 +20,15 @@ const LayoutSupervisor = ({ isDarkMode, setIsDarkMode }) => {
         {
             label: 'Mon profil',
             icon: 'pi pi-user',
-            command : () => {
-                navigate('/supervisor/profile')
-            }
-        },
-        {
-            label: 'Paramètres',
-            icon: 'pi pi-cog',
+            command: () => navigate('/supervisor/profile'),
         },
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
+            command: () => {
+                localStorage.removeItem('access_token');
+                navigate('/login');
+            },
         },
     ];
 

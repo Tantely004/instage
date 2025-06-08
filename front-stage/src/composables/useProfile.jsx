@@ -19,6 +19,8 @@ export default function useProfile() {
             let url;
             if (user.role === 'intern') {
                 url = "http://127.0.0.1:8000/api/profile/intern/";
+            } else if (user.role === 'instructor') {
+                url = "http://127.0.0.1:8000/api/profile/supervisor/";
             } else {
                 throw new Error("Rôle non pris en charge");
             }
@@ -49,6 +51,7 @@ export default function useProfile() {
 
                     const newAccessToken = refreshResponse.data.access;
                     localStorage.setItem('access_token', newAccessToken);
+                    // eslint-disable-next-line no-undef
                     const retryResponse = await axios.get(url, {
                         headers: { Authorization: `Bearer ${newAccessToken}` },
                     });

@@ -8,6 +8,7 @@ urlpatterns = [
     path('dashboard/supervisor/', DashboardInstructorAPIView.as_view(), name='dashboard-instructor'),
     path('dashboard/admin/', DashboardAdminAPIView.as_view(), name='dashboard-admin'),
     path('profile/intern/', ProfileInternAPIView.as_view(), name='profile-intern'),
+    path('profile/supervisor/', ProfileSupervisorAPIView.as_view(), name='profile-supervisor'),
     path('toolbar/', ToolbarDetailAPIView.as_view(), name='toolbar-detail'),
     path('generationtheme/', GenerationThemeAPIView.as_view(), name='generation-theme'),
     path('plannings/create/', CreatePlanningAPIView.as_view(), name='create-planning'),

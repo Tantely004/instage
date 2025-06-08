@@ -1,13 +1,15 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 // eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
 import { InputText } from "primereact/inputtext"
 import { Password } from "primereact/password"
 import { PanelMenu } from "primereact/panelmenu"
+import useProfile from "../../composables/useProfile"
 
 import imgSupervisor from "../../assets/images/img_profile_supervisor.png"
 
 const ProfileSupervisor = () => {
+    const { fetchProfileData, profileData, loading, error } = useProfile()
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
@@ -18,25 +20,25 @@ const ProfileSupervisor = () => {
         duration: 0.5,
     }
 
-    const [ personalInfo, setPersonalInfo ] = useState({
-        lastname: "MANDIMBISOA",
-        firstname: "Laza",
-        email: "laza@gmail.com",
-        contact: "+261 32 45 678 65",
-        direction: "Finance",
-        department: "IT & support",
-        position: "Responsable informatique"
+    const [personalInfo, setPersonalInfo] = useState({
+        lastname: "",
+        firstname: "",
+        email: "",
+        contact: "",
+        direction: "",
+        department: "",
+        position: "",
     })
 
-    const [ passwordUser, setPasswordUser ] = useState({
-        current: "taxandrian",
+    const [passwordUser, setPasswordUser] = useState({
+        current: "",
         new: '',
         confirm: '',
     })
 
-    const [ personalLink, setPersonalLink ] = useState({
-        linkedin: 'https://www.linkedin.com/in/janedoe',
-        portfolio: 'https://janedoe-portfolio.com',
+    const [personalLink, setPersonalLink] = useState({
+        linkedin: '',
+        portfolio: '',
     })
 
     const sessionItems = [
@@ -55,6 +57,36 @@ const ProfileSupervisor = () => {
         }
     ]
 
+    useEffect(() => {
+        fetchProfileData()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
+        if (profileData) {
+            const userData = profileData.user || {}
+            const instructorData = profileData.instructor || {}
+            setPersonalInfo({
+                lastname: userData.name || "",
+                firstname: userData.firstname || "",
+                email: userData.mail || "",
+                contact: userData.contact || "",
+                direction: instructorData.management || "",
+                department: instructorData.department || "",
+                position: instructorData.position || "",
+            })
+            // Les champs de mot de passe et liens restent vides par défaut ou à gérer via une API spécifique
+        }
+    }, [profileData])
+
+    if (loading) {
+        return <div></div>
+    }
+
+    if (error) {
+        return <div className="text-red-600 text-center">{error}</div>
+    }
+
     return (
         <motion.div
             initial="initial"
@@ -69,7 +101,7 @@ const ProfileSupervisor = () => {
                     <div className="flex space-x-6 items-center">
                         <div className="relative">
                             <img 
-                                src={imgSupervisor} 
+                                src={profileData?.user?.image || imgSupervisor} 
                                 className="w-28 h-28 rounded-full"
                                 alt="Profile"
                             />
@@ -80,15 +112,15 @@ const ProfileSupervisor = () => {
 
                         <div className="flex flex-col space-y-2">
                             <h5 className="font-semibold text-lg">
-                                MANDIMBISOA Laza
+                                {`${personalInfo.lastname} ${personalInfo.firstname}`}
                             </h5>
                             <p className="text-gray-500">
-                            <i className="pi pi-briefcase mr-2 text-indigo-500" />
-                                Responsable informatique
+                                <i className="pi pi-briefcase mr-2 text-indigo-500" />
+                                {personalInfo.position}
                             </p>
                             <p className="text-gray-500">
                                 <i className="pi pi-building mr-2 text-indigo-500" />
-                                Département: IT & support
+                                Département: {personalInfo.department}
                             </p>
                         </div>
                     </div>
@@ -98,9 +130,6 @@ const ProfileSupervisor = () => {
                             className="pi pi-ellipsis-v cursor-pointer hover:text-indigo-500"
                             title="Options"
                         />
-                        <p className="text-gray-600 text-sm">
-                            Dernière connexion: il y a 16 heures
-                        </p>
                     </div>
                 </section>
 
@@ -126,6 +155,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.lastname}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, lastname: e.target.value })}
                                 />
                             </div>
 
@@ -138,6 +168,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.firstname}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, firstname: e.target.value })}
                                 />
                             </div>
 
@@ -151,6 +182,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.email}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, email: e.target.value })}
                                 />
                             </div>
 
@@ -163,6 +195,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.contact}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, contact: e.target.value })}
                                 />
                             </div>
 
@@ -175,6 +208,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.position}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, position: e.target.value })}
                                 />
                             </div>
 
@@ -187,6 +221,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.department}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, department: e.target.value })}
                                 />
                             </div>
 
@@ -199,6 +234,7 @@ const ProfileSupervisor = () => {
                                     value={personalInfo.direction}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalInfo({ ...personalInfo, direction: e.target.value })}
                                 />
                             </div>
                         </div>
@@ -223,9 +259,11 @@ const ProfileSupervisor = () => {
                                 </label>
                                 <Password
                                     value={passwordUser.current}
+                                    onChange={(e) => setPasswordUser({ ...passwordUser, current: e.target.value })}
                                     pt={{
                                         input: "!font-poppins !h-11"
                                     }}
+                                    placeholder="********"
                                 />
                                 <p className="mt-6 font-medium text-indigo-500 text-sm">
                                     <i className="pi pi-shield mr-3"/>
@@ -265,6 +303,7 @@ const ProfileSupervisor = () => {
                                     value={personalLink.linkedin}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalLink({ ...personalLink, linkedin: e.target.value })}
                                 />
                             </div>
 
@@ -277,6 +316,7 @@ const ProfileSupervisor = () => {
                                     value={personalLink.portfolio}
                                     size="small"
                                     className="!font-poppins"
+                                    onChange={(e) => setPersonalLink({ ...personalLink, portfolio: e.target.value })}
                                 />
                             </div>
                         </div>

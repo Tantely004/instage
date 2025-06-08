@@ -26,7 +26,7 @@ export default function useToolbar() {
                 setUserData(response.data);
                 return response.data;
             } else {
-                setError("Erreur lors de la récupération des données de l'utilisateur");
+                setError("Veuillez vous reconnectez");
             }
         } catch (err) {
             setError(err.response?.data?.message || "Erreur lors de la récupération des données");
@@ -42,6 +42,7 @@ export default function useToolbar() {
 
                     const newAccessToken = refreshResponse.data.access;
                     localStorage.setItem('access_token', newAccessToken);
+                    // eslint-disable-next-line no-undef
                     const retryResponse = await axios.get(url, {
                         headers: { Authorization: `Bearer ${newAccessToken}` },
                     });

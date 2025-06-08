@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion";
 import { InputText } from "primereact/inputtext";
 import { Password } from "primereact/password";
@@ -62,6 +63,7 @@ const ProfileIntern = () => {
     // Récupérer les données du profil au chargement
     useEffect(() => {
         fetchProfileData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
     // Mettre à jour les états avec les données de l'API
@@ -84,7 +86,7 @@ const ProfileIntern = () => {
     }, [profileData]);
 
     if (loading) {
-        return <div className="text-center py-10">Chargement...</div>;
+        return <div className="text-center py-10"></div>;
     }
 
     if (error) {

@@ -21,14 +21,15 @@ const Toolbar = () => {
         {
             label: 'Mon profil',
             icon: 'pi pi-user',
-        },
-        {
-            label: 'Paramètres',
-            icon: 'pi pi-cog',
+            command: () => navigate('/intern/profile'),
         },
         {
             label: 'Déconnexion',
             icon: 'pi pi-sign-out',
+            command: () => {
+                localStorage.removeItem('access_token');
+                navigate('/login');
+            },
         },
     ];
 

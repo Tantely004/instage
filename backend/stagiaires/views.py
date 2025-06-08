@@ -14,7 +14,9 @@ from django.db.models.functions import ExtractMonth
 from rest_framework import generics
 from decouple import config # type: ignore
 
-class LoginAPIView(TokenObtainPairView):
+User = get_user_model()
+
+class LoginAPIView(TokenObtainPairView): #Vue pour le Login
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         try:
@@ -62,7 +64,7 @@ class LoginAPIView(TokenObtainPairView):
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-class UserDetailAPIView(APIView):
+class UserDetailAPIView(APIView): #Vue de récupération des données utilisateur
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -101,7 +103,7 @@ class UserDetailAPIView(APIView):
             "detail_role": detail_role
         }, status=status.HTTP_200_OK)
 
-class DashboardInternAPIView(APIView):
+class DashboardInternAPIView(APIView): #Vue de récupération et traitement des données du DashboardIntern
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -217,7 +219,7 @@ class DashboardInternAPIView(APIView):
             "supervisions": supervisions
         }, status=status.HTTP_200_OK)
     
-class DashboardInstructorAPIView(APIView):
+class DashboardInstructorAPIView(APIView): #Vue de récupération et traitement des données du DashboardSupervisor
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -283,7 +285,7 @@ class DashboardInstructorAPIView(APIView):
             "supervisions": supervisions,
         }, status=status.HTTP_200_OK)
 
-class DashboardAdminAPIView(APIView):
+class DashboardAdminAPIView(APIView): #Vue de récupération et traitement des données du DashboardAdmin
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -375,7 +377,7 @@ class DashboardAdminAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class ProfileInternAPIView(APIView):
+class ProfileInternAPIView(APIView): #Vue de récupération et traitement des données de ProfileIntern
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -420,10 +422,46 @@ class ProfileInternAPIView(APIView):
                 {"message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
-        
-User = get_user_model()
 
-class ToolbarDetailAPIView(APIView):
+class ProfileSupervisorAPIView(APIView): #Vue de récupération et traitement des données de ProfileSupervisor
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        try:
+            # Récupérer l'utilisateur connecté
+            user = request.user
+            if user.role != 'instructor':
+                return Response(
+                    {"message": "Accès réservé aux encadrants"},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            # Récupérer le profil Instructor associé
+            instructor = Instructor.objects.get(user=user)
+            instructor_data = InstructorSerializer(instructor).data
+
+            # Récupérer les données de l'utilisateur
+            user_data = UserSerializer(user).data
+
+            # Combiner les données
+            profile_data = {
+                "user": user_data,
+                "instructor": instructor_data,
+            }
+
+            return Response(profile_data, status=status.HTTP_200_OK)
+        except Instructor.DoesNotExist:
+            return Response(
+                {"message": "Profil d'encadrant non trouvé"},
+                status=status.HTTP_404_NOT_FOUND
+            )
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class ToolbarDetailAPIView(APIView): #Vue de récupération et traitement des données du Toolbar
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -437,7 +475,7 @@ class ToolbarDetailAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class GenerationThemeAPIView(APIView):
+class GenerationThemeAPIView(APIView): #Vue de récupération et traitement des données de l'API Gemini
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -537,7 +575,7 @@ class GenerationThemeAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
         
-class CreatePlanningAPIView(APIView):
+class CreatePlanningAPIView(APIView): #Vue d'enregistrement d'un planning (chronogramme) dans la base de données
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -607,7 +645,7 @@ class CreatePlanningAPIView(APIView):
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class TaskCalendarAPIView(generics.ListAPIView):
+class TaskCalendarAPIView(generics.ListAPIView): #Vue d'affichage des tâches dans la base de données sur le calendrier
     serializer_class = TaskSerializer
 
     def get_queryset(self):
@@ -633,7 +671,7 @@ class TaskCalendarAPIView(generics.ListAPIView):
         ]
         return Response(events)
 
-class TaskListAPIView(APIView):
+class TaskListAPIView(APIView): #Vue de récupération et affichage des tâches dans la page KanBan Intern
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -672,7 +710,7 @@ class TaskListAPIView(APIView):
         
         return Response(task_data, status=status.HTTP_200_OK)
 
-class TaskUpdateAPIView(APIView):
+class TaskUpdateAPIView(APIView): #Vue de traitement des données du KanBan pour les changements de status en temps réel
     permission_classes = [IsAuthenticated]
 
     def patch(self, request, task_id):
@@ -716,7 +754,7 @@ class TaskUpdateAPIView(APIView):
         
         return Response(updated_task, status=status.HTTP_200_OK)
 
-class InternshipDetailAPIView(APIView):
+class InternshipDetailAPIView(APIView): #Vue de récupération et affichage des informations pour intern/me
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
