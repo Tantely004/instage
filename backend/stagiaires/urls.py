@@ -18,4 +18,6 @@ urlpatterns = [
     path('internship/detail/', InternshipDetailAPIView.as_view(), name='internship-detail'),
     path('users/', UserListAPIView.as_view(), name='user-list'),
     path('users/create/', CreateUserAPIView.as_view(), name='create-user'),
+    path('follow-up-admin/', FollowUpAdminAPIView.as_view(), name='follow-up-admin'),
+    path('project/<int:project_id>/tasks/', ProjectTaskListAPIView.as_view(), name='project-task-list'),
 ]

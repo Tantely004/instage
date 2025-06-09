@@ -1,6 +1,5 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useNavigate } from "react-router-dom"
-// eslint-disable-next-line no-unused-vars
 import { motion } from 'framer-motion'
 import { BreadCrumb } from 'primereact/breadcrumb'
 import { Tag } from 'primereact/tag'
@@ -14,18 +13,20 @@ import { Editor } from 'primereact/editor'
 import { Calendar } from "primereact/calendar"
 import { Dropdown } from "primereact/dropdown"
 import { FileUpload } from "primereact/fileupload"
+import axios from 'axios'
 
 import imgIntern from "../../../assets/images/fake/intern2.png"
 
 const ProjectSupervisor = () => {
     const navigate = useNavigate()
+    const [tasks, setTasks] = useState([])
     const [selectedTask, setSelectedTask] = useState(null)
     const [dialogVisible, setDialogVisible] = useState(false)
-    const [ selectedIntern, setSelectedIntern ] = useState(false)
-    const [ selectedSeverity, setSelectedSeverity ] = useState(false)
-    const [ selectedStatus, setSelectedStatus ] = useState(false)
     const [taskDialog, setTaskDialog] = useState(false)
     const [draggedTask, setDraggedTask] = useState(null)
+    const [selectedIntern, setSelectedIntern] = useState(null)
+    const [selectedSeverity, setSelectedSeverity] = useState(null)
+    const [selectedStatus, setSelectedStatus] = useState(null)
 
     const severities = [
         { name: 'Urgent', value: 'urgent' },
@@ -40,154 +41,29 @@ const ProjectSupervisor = () => {
         { name: 'Annulé', value: 'cancelled' },
     ]
 
-
-    const [tasks, setTasks] = useState([
+    const collaborators = [
         {
             id: 1,
-            title: "Configurer la messagerie",
-            description: "Configurer la messagerie interne pour l'équipe projet.",
-            status: "no",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "30 Mai 2025",
-            priority: "Urgent",
-            attachments: [
-                { name: "email-config.pdf", size: "1.2 MB" }
-            ],
-            updated_at: "Il y a 1 h",
+            lastname: "John",
+            firstname: "Doe",
+            avatar: imgIntern,
         },
-        {
-            id: 2,
-            title: "Rédiger la documentation",
-            description: "Rédiger la documentation technique pour le projet.",
-            status: "pending",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "24 Mai 2025",
-            end_date: "24 Mai 2025",
-            priority: "Secondaire",
-            attachments: [
-                { name: "doc-draft.pdf", size: "2.5 MB" }
-            ],
-            updated_at: "Il y a 30 min",
-        },
-        {
-            id: 3,
-            title: "Mettre à jour le site web",
-            description: "Mettre à jour les pages principales du site web.",
-            status: "achieved",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "22 Mai 2025",
-            end_date: "23 Mai 2025",
-            priority: "Urgent",
-            attachments: [],
-            updated_at: "Hier",
-        },
-        {
-            id: 4,
-            title: "Corriger les erreurs dans l'application",
-            description: "Corriger les bugs signalés dans l'application mobile.",
-            status: "reported",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "28 Mai 2025",
-            priority: "Optionnel",
-            attachments: [
-                { name: "bug-report.pdf", size: "0.8 MB" }
-            ],
-            updated_at: "Il y a 2 h",
-        },
-        {
-            id: 5,
-            title: "Créer une nouvelle base de données",
-            description: "Créer une base de données pour les nouveaux utilisateurs.",
-            status: "no",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "25 Mai 2025",
-            end_date: "01 Juin 2025",
-            priority: "Secondaire",
-            attachments: [],
-            updated_at: "Aujourd'hui",
-        },
-        {
-            id: 6,
-            title: "Déployer l'application",
-            description: "Déployer la nouvelle version de l'application sur le serveur.",
-            status: "pending",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "24 Mai 2025",
-            end_date: "29 Mai 2025",
-            priority: "Secondaire",
-            attachments: [],
-            updated_at: "Il y a 45 min",
-        },
-        {
-            id: 7,
-            title: "Vérifier la compatibilité mobile",
-            description: "Tester la compatibilité de l'application sur différents appareils mobiles.",
-            status: "achieved",
-            users: {
-                id: 1,
-                lastname: "John",
-                firstname: "Doe",
-                avatar: imgIntern,
-            },
-            start_date: "23 Mai 2025",
-            end_date: "24 Mai 2025",
-            priority: "Optionnel",
-            attachments: [
-                { name: "mobile-test.pdf", size: "1.0 MB" }
-            ],
-            updated_at: "Aujourd'hui",
-        },
-        {
-            id: 8,
-            title: "Ajouter un système de notifications",
-            description: "Implémenter un système de notifications push pour les utilisateurs.",
-            status: "reported",
-            users: {
-                id: 2,
-                lastname: "Jane",
-                firstname: "Smith",
-                avatar: imgIntern,
-            },
-            start_date: "22 Mai 2025",
-            end_date: "27 Mai 2025",
-            priority: "Urgent",
-            attachments: [],
-            updated_at: "Il y a 3 h",
-        },
-    ])
+    ]
 
+    useEffect(() => {
+        const fetchTasks = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/project/1/tasks/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setTasks(response.data);
+            } catch (error) {
+                console.error('Erreur lors du chargement des tâches:', error);
+            }
+        };
+        fetchTasks();
+    }, []);
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -206,25 +82,8 @@ const ProjectSupervisor = () => {
 
     const back = { 
         icon: 'pi pi-arrow-left', 
-        command: () => {
-            navigate('/supervisor/follow-up')
-        }
+        command: () => navigate('/admin/follow-up')
     }
-
-    const collaborators = [
-        {
-            id: 1,
-            lastname: "John",
-            firstname: "Doe",
-            avatar: imgIntern,
-        },
-        {
-            id: 2,
-            lastname: "Jane",
-            firstname: "Smith",
-            avatar: imgIntern,
-        },
-    ]
 
     const statusCategories = [
         { title: "To-do List", status: "no" },
@@ -240,16 +99,11 @@ const ProjectSupervisor = () => {
 
     const getColumnColor = (status) => {
         switch (status) {
-            case "no":
-                return "border-gray-300"
-            case "pending":
-                return "border-yellow-200"
-            case "achieved":
-                return "border-green-200"
-            case "reported":
-                return "border-red-200"
-            default:
-                return "border-gray-300"
+            case "no": return "border-gray-300"
+            case "pending": return "border-yellow-200"
+            case "achieved": return "border-green-200"
+            case "reported": return "border-red-200"
+            default: return "border-gray-300"
         }
     }
 
@@ -264,40 +118,42 @@ const ProjectSupervisor = () => {
         setDraggedTask(null)
     }
 
-    const handleDrop = (e, newStatus) => {
+    const handleDrop = async (e, newStatus) => {
         e.preventDefault()
         const taskId = e.dataTransfer.getData("taskId")
-        const updatedTasks = tasks.map(task => 
-            task.id === parseInt(taskId) 
-                ? { ...task, status: newStatus, updated_at: "Aujourd'hui" }
-                : task
-        )
-        setTasks(updatedTasks)
+        try {
+            const token = localStorage.getItem('access_token');
+            await axios.patch(`http://127.0.0.1:8000/api/project/1/tasks/${taskId}/`, {
+                status: newStatus
+            }, {
+                headers: { Authorization: `Bearer ${token}` }
+            });
+            const updatedTasks = tasks.map(task => 
+                task.id === parseInt(taskId) ? { ...task, status: newStatus, updated_at: "Aujourd'hui" } : task
+            );
+            setTasks(updatedTasks);
+        } catch (error) {
+            console.error('Erreur lors de la mise à jour du statut:', error);
+        }
         setDraggedTask(null)
     }
 
-    const handleDragOver = (e) => {
-        e.preventDefault()
-    }
-
+    const handleDragOver = (e) => e.preventDefault()
     const handleDragEnter = (e) => {
         e.preventDefault()
         e.currentTarget.classList.add('bg-gray-50', 'border-2', 'border-dashed', 'border-indigo-400')
     }
-
     const handleDragLeave = (e) => {
         e.preventDefault()
         e.currentTarget.classList.remove('bg-gray-50', 'border-2', 'border-dashed', 'border-indigo-400')
     }
 
-    const internTemplate = (option) => {
-        return (
-            <div className="flex items-center space-x-2">
-                <img src={option.avatar} className='w-8 h-8 rounded-full'/>
-                <div>{option.lastname} {option.firstname}</div>
-            </div>
-        );
-    };
+    const internTemplate = (option) => (
+        <div className="flex items-center space-x-2">
+            <img src={option.avatar} className='w-8 h-8 rounded-full'/>
+            <div>{option.lastname} {option.firstname}</div>
+        </div>
+    );
 
     return (
         <motion.div
@@ -308,7 +164,7 @@ const ProjectSupervisor = () => {
             transition={pageTransition} 
             className={`mb-12 max-w-[89vw]`}
         >
-             <section className='flex justify-between items-center space-x-28'>
+            <section className='flex justify-between items-center space-x-28'>
                 <div>
                     <div className='flex items-center space-x-4'>
                         <BreadCrumb 
@@ -321,10 +177,7 @@ const ProjectSupervisor = () => {
                                 separator: "!text-indigo-400",
                             }}
                         />
-                        <Tag 
-                            value="En cours" 
-                            className='!font-poppins'
-                        />
+                        <Tag value="En cours" className='!font-poppins'/>
                     </div>
 
                     <div className='ml-12 flex items-center space-x-16'>
@@ -338,10 +191,6 @@ const ProjectSupervisor = () => {
                                 />
                             ))}
                         </AvatarGroup>
-
-                        <p className='text-sm text-gray-500'>
-                            Aujourd'hui - le 23 Mai 2025
-                        </p>
 
                         <div className='flex items-center gap-x-4'>
                             <Button 
@@ -364,10 +213,10 @@ const ProjectSupervisor = () => {
                     className='!h-12 !font-poppins'
                     onClick={() => setTaskDialog(true)}
                 />
-             </section>
+            </section>
 
-             <section className='mt-10 grid grid-cols-4 gap-8'>
-             {statusCategories.map((category) => {
+            <section className='mt-10 grid grid-cols-4 gap-8'>
+                {statusCategories.map((category) => {
                     const filteredTasks = tasks.filter(task => task.status === category.status)
                     return (
                         <motion.div 
@@ -438,8 +287,7 @@ const ProjectSupervisor = () => {
                         </motion.div>
                     )
                 })}
-             </section>
-
+            </section>
 
             <Dialog
                 header={`Modifié récemment`}
@@ -497,16 +345,13 @@ const ProjectSupervisor = () => {
                                 <i className="pi pi-exclamation-circle mr-2" />
                                 Priorité
                             </h3>
-                            <Tag 
-                                value={selectedTask.priority}
-                                className='!w-24'
-                            />
+                            <Tag value={selectedTask.priority} className='!w-24'/>
                         </div>
 
                         {selectedTask.attachments.length > 0 && (
                             <div className="mt-6">
                                 <h3 className="text-lg font-semibold text-gray-700 flex items-center">
-                                    <i className="pi pi-paper.contrib mr-2" />
+                                    <i className="pi pi-paperclip mr-2" />
                                     Attachment ({selectedTask.attachments.length})
                                 </h3>
 
@@ -547,10 +392,7 @@ const ProjectSupervisor = () => {
                     <div className='grid grid-cols-2 items-center gap-8'>
                         <div className="mt-8 flex flex-col space-y-3">
                             <label><i className="pi pi-file text-indigo-400 mr-3"/>Intitulé</label>
-                            <InputText 
-                                size="small" 
-                                className="w-full" 
-                            />
+                            <InputText size="small" className="w-full" />
                         </div>
 
                         <div className="mt-8 flex flex-col space-y-3">

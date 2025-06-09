@@ -3,10 +3,32 @@ import { motion } from "framer-motion"
 import { Button } from "primereact/button"
 import { DataTable } from "primereact/datatable"
 import { Column } from "primereact/column"
-import { useNavigate } from "react-router-dom"
+import { useEffect, useState } from "react"
+import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 const FollowUpAdmin = () => {
     const navigate = useNavigate()
+    const [interns, setInterns] = useState([])
+    const [projects, setProjects] = useState([])
+    const [reports, setReports] = useState([])
+
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/follow-up-admin/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setInterns(response.data.interns || []);
+                setProjects(response.data.projects || []);
+                setReports(response.data.reports || []);
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error);
+            }
+        };
+        fetchData();
+    }, []);
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
@@ -18,140 +40,43 @@ const FollowUpAdmin = () => {
         duration: 0.5,
     }
 
-    const interns = [
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            supervisor: "Emilie Jane",
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            supervisor: "Emilie Jane",
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            supervisor: "Emilie Jane",
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            supervisor: "Emilie Jane",
-        },
-    ]
+    const idTemplate = (rowData) => (
+        <span>#{rowData.idIntern}</span>
+    )
 
-    const projects = [
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-    ]
+    const nameTemplate = (rowData) => (
+        <span>{rowData.lastname} {rowData.firstname}</span>
+    )
 
-    const reports = [
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-            receiver: 'Emilie Jane',
-        },
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-            receiver: 'Emilie Jane',
-        },
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-            receiver: 'Emilie Jane',
-        },
-    ]
+    const actionTemplate = () => (
+        <i className='pi pi-ellipsis-h cursor-pointer hover:text-indigo-400' />
+    )
 
-    const idTemplate = (interns) => {
-        return (
-            <span>
-                #{interns.idIntern}
-            </span>
-        )
-    }
+    const folderTemplate = () => (
+        <i className='pi pi-folder cursor-pointer hover:text-indigo-400' />
+    )
 
-    const nameTemplate = (interns) => {
-        return (
-            <span>
-                {interns.lastname} {interns.firstname}
-            </span>
-        )
-    }
+    const progressProjectTemplate = (rowData) => (
+        <span>{rowData.progress}%</span>
+    )
 
-    const actionTemplate = () => {
-        return (
-            <i className='pi pi-ellipsis-h'/>
-        )
-    }
+    const idReportTemplate = (rowData) => (
+        <span>#{rowData.id}</span>
+    )
 
-    const folderTemplate = () => {
-        return (
-            <i className='pi pi-folder'/>
-        )
-    }
+    const actionReportTemplate = () => (
+        <i className='pi pi-ellipsis-h cursor-pointer hover:text-indigo-400' />
+    )
 
-    const progressProjectTemplate = (projects) => {
-        return (
-            <span>
-                {projects.progress}%
-            </span>
-        )
-    }
+    const documentTemplate = (rowData) => (
+        <a href={`/api/documents/${rowData.document}`} target="_blank" rel="noopener noreferrer">
+            {rowData.document || 'Aucun document'}
+        </a>
+    )
 
-    const idReportTemplate = (reports) => {
-        return (
-            <span>
-                #{reports.id}
-            </span>
-        )
-    }
-
-    const actionReportTemplate = () => {
-        return (
-            <i className='pi pi-ellipsis-h'/>
-        )
-    }
+    const dateTemplate = (rowData) => (
+        <span>{new Date(rowData.date).toLocaleDateString('fr-FR')}</span>
+    )
 
     return (
         <motion.div
@@ -167,12 +92,10 @@ const FollowUpAdmin = () => {
                     <h1 className='font-bold text-2xl text-indigo-400'>
                         Suivi
                     </h1>
-
                     <p className='mt-3 w-[75%]'>
                         Supervisez l'évolution et les performances de chaque stagiaire sur leur activités vis-à-vis des projets de l'entreprise
                     </p>
                 </div>
-
                 <Button 
                     icon="pi pi-plus"
                     label="Assigner"
@@ -190,15 +113,15 @@ const FollowUpAdmin = () => {
                         <i 
                             className='pi pi-clock cursor-pointer hover:text-indigo-400'
                             title='Historique'
+                            onClick={() => navigate('/admin/follow-up/history')}
                         />
                     </div>
-
                     <div className='mt-4'>
                         <DataTable 
                             value={interns}
                             paginator
                             rows={5}
-                            rowsPerPageOptions={[5,10]}
+                            rowsPerPageOptions={[5, 10]}
                         >
                             <Column
                                 header='ID'
@@ -218,7 +141,7 @@ const FollowUpAdmin = () => {
                             />
                             <Column
                                 field='supervisor'
-                                header='Progression'
+                                header='Encadreur'
                             />
                             <Column
                                 header='Action'
@@ -239,7 +162,6 @@ const FollowUpAdmin = () => {
                                 title='Options'
                             />
                         </div>
-
                         <div className='mt-4'>
                             <DataTable
                                 value={projects}
@@ -249,19 +171,21 @@ const FollowUpAdmin = () => {
                                 />
                                 <Column 
                                     field='title'
+                                    header='Titre'
                                 />
                                 <Column 
+                                    header='Progression'
                                     body={progressProjectTemplate}
                                 />
                             </DataTable>
                         </div>
                     </div>
-
                     <div>
                         <Button 
                             icon="pi pi-clock"
                             label="Voir l'historique"
                             className='!flex !justify-center !items-center !mx-auto !bg-transparent !border-none !text-indigo-400 hover:!text-indigo-500'
+                            onClick={() => navigate('/admin/follow-up/project-history')}
                         />
                     </div>
                 </div>
@@ -279,7 +203,6 @@ const FollowUpAdmin = () => {
                                 title="Options"
                             />
                         </div>
-
                         <div className='mt-6'>
                             <DataTable value={reports}>
                                 <Column 
@@ -291,16 +214,12 @@ const FollowUpAdmin = () => {
                                     header='Intitulé'
                                 />
                                 <Column 
-                                    field='document'
                                     header='Document'
+                                    body={documentTemplate}
                                 />
                                 <Column 
-                                    field='date'
                                     header='Date'
-                                />
-                                <Column 
-                                    field='intern'
-                                    header='Stagiaire'
+                                    body={dateTemplate}
                                 />
                                 <Column 
                                     field='intern'
@@ -317,11 +236,11 @@ const FollowUpAdmin = () => {
                             </DataTable>
                         </div>
                     </div>
-
                     <div>
                         <Button 
                             label='Voir tout'
                             className='!flex !justify-between !items-center !mx-auto !bg-transparent !text-indigo-400 !border-none'
+                            onClick={() => navigate('/admin/follow-up/all-reports')}
                         />
                     </div>
                 </div>

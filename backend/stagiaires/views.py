@@ -12,8 +12,9 @@ import requests
 from django.db.models import Count
 from django.db.models.functions import ExtractMonth
 from rest_framework import generics
+from django.db.models import F
 from decouple import config # type: ignore
-
+import logging
 User = get_user_model()
 
 class LoginAPIView(TokenObtainPairView): #Vue pour le Login
@@ -980,7 +981,7 @@ class UserListAPIView(APIView): #Vue de récupération et affichage des utilisat
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class CreateUserAPIView(APIView):
+class CreateUserAPIView(APIView): #V
     permission_classes = [IsAuthenticated]
 
     def post(self, request):
@@ -1043,3 +1044,124 @@ class CreateUserAPIView(APIView):
                 {"message": str(e)},
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
+
+class FollowUpAdminAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        if request.user.role != 'administrator':
+            return Response({"error": "Accès refusé. Seuls les administrateurs peuvent accéder à cette page."}, status=403)
+
+        today = timezone.now().date()  # 2025-06-09
+        interns_data = []
+        projects_data = []
+        reports_data = []
+
+        # Données des stagiaires
+        internships = Internship.objects.select_related('intern__user', 'instructor__user').all()
+        for internship in internships:
+            if not internship.intern:  # Vérification si intern est None
+                continue
+            intern_user = internship.intern.user
+            instructor_user = internship.instructor.user
+            days_left = max(0, (internship.end_date - today).days)
+            assigned_tasks = AssignmentTask.objects.filter(intern=internship.intern).select_related('task')
+            total_progress = sum(task.task.progression for task in assigned_tasks if task.task.progression is not None) / max(1, assigned_tasks.count()) if assigned_tasks.exists() else 0
+
+            interns_data.append({
+                'idIntern': intern_user.identifier,
+                'lastname': intern_user.name,
+                'firstname': intern_user.firstname,
+                'daysLeft': days_left,
+                'project': internship.theme,
+                'supervisor': f"{instructor_user.name} {instructor_user.firstname}",
+                'progress': int(total_progress),  # Progression moyenne des tâches assignées
+            })
+
+        # Données des projets
+        projects = Project.objects.select_related('internship').all()
+        for project in projects:
+            if not project.internship or not project.internship.intern:  # Vérification de l'internship et de son intern
+                continue
+            assigned_tasks = AssignmentTask.objects.filter(intern=project.internship.intern).select_related('task')
+            progress = sum(task.task.progression for task in assigned_tasks if task.task.progression is not None) / max(1, assigned_tasks.count()) if assigned_tasks.exists() else 0
+            projects_data.append({
+                'id': project.id,
+                'title': project.title,
+                'progress': int(progress),
+            })
+
+        # Données des rapports
+        reports = Report.objects.select_related('interview__internship__intern__user', 'interview__internship__instructor__user', 'document').all()
+        for report in reports:
+            if not report.interview or not report.interview.internship or not report.interview.internship.intern:
+                continue
+            intern_user = report.interview.internship.intern.user
+            instructor_user = report.interview.internship.instructor.user
+            reports_data.append({
+                'id': report.id,
+                'title': report.title,
+                'document': report.document.name if report.document else None,
+                'date': report.date.isoformat(),
+                'intern': f"{intern_user.name} {intern_user.firstname}",
+                'receiver': f"{instructor_user.name} {instructor_user.firstname}",
+                'submitted_date': report.submitted_date.isoformat() if report.submitted_date else None,
+            })
+
+        return Response({
+            'interns': interns_data,
+            'projects': projects_data,
+            'reports': reports_data,
+        })
+
+logger = logging.getLogger(__name__)
+
+class ProjectTaskListAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, project_id):
+        logger.info(f"Utilisateur connecté: {request.user.name}, Rôle: {request.user.role}")
+        allowed_roles = ['administrator', 'instructor']
+        if request.user.role not in allowed_roles:
+            logger.warning(f"Accès refusé pour {request.user.name} (rôle: {request.user.role})")
+            return Response({"message": "Accès réservé aux administrateurs et instructeurs."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            project = Project.objects.get(id=project_id)
+            internship = project.internship
+            intern = internship.intern
+            assigned_tasks = AssignmentTask.objects.filter(intern=intern).select_related('task')
+            tasks = [assignment.task for assignment in assigned_tasks]
+        except (Project.DoesNotExist, Internship.DoesNotExist, Intern.DoesNotExist):
+            return Response({"message": "Projet ou stagiaire non trouvé."}, status=status.HTTP_404_NOT_FOUND)
+
+        status_mapping = {
+            'open': 'no',
+            'progressing': 'pending',
+            'completed': 'achieved',
+            'cancelled': 'reported'
+        }
+
+        task_data = [
+            {
+                'id': task.id,
+                'title': task.title,
+                'description': task.description,
+                'status': status_mapping.get(task.status, 'no'),
+                'users': {
+                    'id': intern.user.id,
+                    'lastname': intern.user.name,
+                    'firstname': intern.user.firstname,
+                    'avatar': intern.user.image.url if intern.user.image else '/path/to/default-avatar.png'
+                },
+                'start_date': task.start_date.strftime('%d %b %Y'),
+                'end_date': task.end_date.strftime('%d %b %Y') if task.end_date else None,
+                'priority': task.priority,
+                'attachments': [],
+                'updated_at': 'Aujourd\'hui'
+            }
+            for task in tasks
+        ]
+
+        return Response(task_data, status=status.HTTP_200_OK)
+

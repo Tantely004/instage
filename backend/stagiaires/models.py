@@ -249,7 +249,7 @@ class AssignmentTask(models.Model):
 class Project(models.Model):
     id = models.AutoField(primary_key=True)
     title = models.CharField(max_length=100)
-    internship = models.ForeignKey(Internship, on_delete=models.CASCADE)
+    internship = models.ForeignKey(Internship, on_delete=models.CASCADE, null=True)
 
 # ===================== #
 #       PLANNING        #
