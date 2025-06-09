@@ -1,4 +1,4 @@
-import { NavLink } from 'react-router-dom';
+import { NavLink, useNavigate } from 'react-router-dom';
 import { Button } from 'primereact/button';
 import { Tooltip } from 'primereact/tooltip';
 import { InputSwitch } from 'primereact/inputswitch';
@@ -13,6 +13,13 @@ const SidebarSupervisor = ({ collapsed, setCollapsed, isDarkMode, setIsDarkMode 
     { label: 'Ressources', icon: 'pi pi-folder', path: '/supervisor/resources' },
     { label: 'Évaluations', icon: 'pi pi-star', path: '/evaluations' },
   ];
+
+  const navigate = useNavigate()
+
+    const handleClick = () => {
+        localStorage.removeItem('access_token');
+        navigate('/login');
+    }
 
   const toggleSidebar = () => setCollapsed(!collapsed);
 
@@ -82,9 +89,10 @@ const SidebarSupervisor = ({ collapsed, setCollapsed, isDarkMode, setIsDarkMode 
                 label={collapsed ? '' : 'Déconnexion'}
                 icon="pi pi-sign-out"
                 unstyled
-                className={`h-10 bg-indigo-400 dark:bg-indigo-600 rounded-md text-white flex justify-center items-center mx-auto text-sm mt-8 transition-all duration-300 ${
+                className={`h-10 bg-indigo-400 dark:bg-indigo-600 cursor-pointer rounded-md text-white flex justify-center items-center mx-auto text-sm mt-8 transition-all duration-300 ${
                   collapsed ? 'w-12 px-0' : 'w-48 px-6 gap-x-3'
                 }`}
+                onClick={handleClick}
             />
         </section>
     </div>

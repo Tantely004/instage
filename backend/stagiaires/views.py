@@ -668,13 +668,25 @@ class TaskCalendarAPIView(generics.ListAPIView): #Vue d'affichage des tâches da
         ]
         return Response(events)
 
-class TaskListAPIView(APIView): #Vue de récupération et affichage des tâches dans la page KanBan Intern
+class TaskListAPIView(APIView):  # Vue de récupération et affichage des tâches dans la page KanBan Intern
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
-        # Récupérer toutes les tâches depuis la base de données
-        tasks = Task.objects.all().order_by('start_date')
-        
+        # Récupérer l'utilisateur connecté
+        user = request.user
+        if user.role != 'intern':
+            return Response({"message": "Accès réservé aux stagiaires."}, status=status.HTTP_403_FORBIDDEN)
+
+        try:
+            # Récupérer le profil Intern de l'utilisateur connecté
+            intern = Intern.objects.get(user=user)
+        except Intern.DoesNotExist:
+            return Response({"message": "Profil stagiaire introuvable."}, status=status.HTTP_404_NOT_FOUND)
+
+        # Récupérer les tâches assignées à cet intern via AssignmentTask
+        assigned_tasks = AssignmentTask.objects.filter(intern=intern).select_related('task')
+        tasks = [assignment.task for assignment in assigned_tasks]
+
         # Mapper les statuts de la base de données aux statuts de l'interface
         status_mapping = {
             'open': 'no',
@@ -682,7 +694,7 @@ class TaskListAPIView(APIView): #Vue de récupération et affichage des tâches 
             'completed': 'achieved',
             'cancelled': 'reported'
         }
-        
+
         # Préparer les données pour l'interface
         task_data = [
             {
@@ -691,10 +703,10 @@ class TaskListAPIView(APIView): #Vue de récupération et affichage des tâches 
                 'description': task.description,
                 'status': status_mapping.get(task.status, 'no'),  # Utiliser le mapping
                 'users': {
-                    'id': 1,  # Placeholder, à remplacer par une logique réelle si nécessaire
-                    'lastname': 'Doe',
-                    'firstname': 'John',
-                    'avatar': '/path/to/avatar.png'  # Placeholder, à ajuster
+                    'id': user.id,
+                    'lastname': user.name,
+                    'firstname': user.firstname,
+                    'avatar': user.image.url if user.image else '/path/to/default-avatar.png'  # Ajuster selon ton modèle
                 },
                 'start_date': task.start_date.strftime('%d %b %Y'),
                 'end_date': task.end_date.strftime('%d %b %Y') if task.end_date else None,
@@ -704,9 +716,9 @@ class TaskListAPIView(APIView): #Vue de récupération et affichage des tâches 
             }
             for task in tasks
         ]
-        
-        return Response(task_data, status=status.HTTP_200_OK)
 
+        return Response(task_data, status=status.HTTP_200_OK)
+    
 class TaskUpdateAPIView(APIView): #Vue de traitement des données du KanBan pour les changements de status en temps réel
     permission_classes = [IsAuthenticated]
 
@@ -816,7 +828,7 @@ class InternshipDetailAPIView(APIView): #Vue de récupération et affichage des 
         except Exception as e:
             return Response({"message": str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
-class UserListAPIView(APIView):
+class UserListAPIView(APIView): #Vue de récupération et affichage des utilisateurs dans l'interface Admin
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
@@ -885,6 +897,70 @@ class UserListAPIView(APIView):
                 })
 
             return Response(users_data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(
+                {"message": str(e)},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
+
+class CreateUserAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request):
+        try:
+            user = request.user
+            if user.role != 'administrator':
+                return Response(
+                    {"message": "Accès réservé aux administrateurs."},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+
+            user_data = {
+                'identifier': request.data.get('identifier'),
+                'mail': request.data.get('mail'),
+                'name': request.data.get('name'),
+                'firstname': request.data.get('firstname'),
+                'contact': request.data.get('contact'),
+                'password': request.data.get('password'),
+                'role': request.data.get('role'),
+            }
+
+            required_fields = ['identifier', 'mail', 'name', 'firstname', 'contact', 'password', 'role']
+            if not all(field in request.data for field in required_fields):
+                return Response(
+                    {"message": "Tous les champs obligatoires doivent être remplis."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
+            user = User.objects.create_user(**user_data)
+
+            if user_data['role'] == 'intern':
+                Intern.objects.create(
+                    user=user,
+                    etablishment=request.data.get('etablishment', ''),
+                    sector=request.data.get('sector', ''),
+                    level=request.data.get('level', '')
+                )
+            elif user_data['role'] == 'supervisor':
+                Instructor.objects.create(
+                    user=user,
+                    management=request.data.get('management', ''),
+                    department=request.data.get('department', ''),
+                    position=request.data.get('position', '')
+                )
+            elif user_data['role'] == 'administrator':
+                Administrator.objects.create(
+                    user=user,
+                    management=request.data.get('management', ''),
+                    department=request.data.get('department', ''),
+                    position=request.data.get('position', '')
+                )
+
+            return Response(
+                {"message": "Utilisateur créé avec succès."},
+                status=status.HTTP_201_CREATED
+            )
+
         except Exception as e:
             return Response(
                 {"message": str(e)},

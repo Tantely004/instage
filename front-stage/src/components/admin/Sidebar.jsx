@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { NavLink } from "react-router-dom"
+import { NavLink, useNavigate } from "react-router-dom"
 import { Button } from "primereact/button"
 import { Tooltip } from "primereact/tooltip"
 import { InputSwitch } from 'primereact/inputswitch'
@@ -8,6 +8,12 @@ import Logo from '../Logo'
 
 const SidebarAdmin = ({ collapsed, setCollapsed }) => {
     const [checked, setChecked] = useState(false)
+    const navigate = useNavigate()
+
+    const handleClick = () => {
+        localStorage.removeItem('access_token');
+        navigate('/login');
+    }
 
     const menuItems = [
         { label: "Tableau de bord", icon: "pi pi-home", path: "/admin/dashboard" },
@@ -82,7 +88,8 @@ const SidebarAdmin = ({ collapsed, setCollapsed }) => {
                     label={collapsed ? '' : 'Déconnexion'}
                     icon="pi pi-sign-out"
                     unstyled
-                    className={`h-10 bg-indigo-400 rounded-md text-white flex justify-center items-center mx-auto text-sm mt-8 transition-all duration-300 ${collapsed ? 'w-12 px-0' : 'w-48 px-6 gap-x-3 '}`}
+                    className={`h-10 bg-indigo-400 rounded-md cursor-pointer text-white flex justify-center items-center mx-auto text-sm mt-8 transition-all duration-300 ${collapsed ? 'w-12 px-0' : 'w-48 px-6 gap-x-3 '}`}
+                    onClick={handleClick}
                 />
             </section>
         </div>

@@ -1,129 +1,129 @@
 /* eslint-disable no-unused-vars */
-import { BreadCrumb } from 'primereact/breadcrumb'
-import { Tag } from 'primereact/tag'
-import { AvatarGroup } from 'primereact/avatargroup'
-import { Avatar } from 'primereact/avatar'
-import { Button } from 'primereact/button'
-import { Dialog } from 'primereact/dialog'
-import { motion } from 'framer-motion'
-import { useNavigate } from 'react-router-dom'
-import { useState, useEffect } from 'react'
-import imgIntern from '../../../assets/images/fake/intern2.png'
-import axios from 'axios'
+import { BreadCrumb } from 'primereact/breadcrumb';
+import { Tag } from 'primereact/tag';
+import { AvatarGroup } from 'primereact/avatargroup';
+import { Avatar } from 'primereact/avatar';
+import { Button } from 'primereact/button';
+import { Dialog } from 'primereact/dialog';
+import { motion } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import imgIntern from '../../../assets/images/fake/intern2.png';
+import axios from 'axios';
 
 const ProjectIntern = () => {
-    const navigate = useNavigate()
-    const [selectedTask, setSelectedTask] = useState(null)
-    const [dialogVisible, setDialogVisible] = useState(false)
-    const [draggedTask, setDraggedTask] = useState(null)
-    const [tasks, setTasks] = useState([])
-    const [loading, setLoading] = useState(true)
+    const navigate = useNavigate();
+    const [selectedTask, setSelectedTask] = useState(null);
+    const [dialogVisible, setDialogVisible] = useState(false);
+    const [draggedTask, setDraggedTask] = useState(null);
+    const [tasks, setTasks] = useState([]);
+    const [loading, setLoading] = useState(true);
 
     // Récupérer les tâches depuis l'API
     const fetchTasks = async () => {
         try {
-            const token = localStorage.getItem('access_token')
+            const token = localStorage.getItem('access_token');
             const response = await axios.get('http://localhost:8000/api/tasks/', {
                 headers: { Authorization: `Bearer ${token}` },
-            })
+            });
             const normalizedTasks = response.data.map(task => ({
                 ...task,
                 priority: task.priority.toLowerCase(),
-            }))
-            setTasks(normalizedTasks)
-            setLoading(false)
+            }));
+            setTasks(normalizedTasks);
+            setLoading(false);
         } catch (error) {
-            console.error('Erreur lors du chargement des tâches:', error)
-            setLoading(false)
+            console.error('Erreur lors du chargement des tâches:', error);
+            setLoading(false);
         }
-    }
+    };
 
     useEffect(() => {
-        fetchTasks()
-    }, [])
+        fetchTasks();
+    }, []);
 
     // Mettre à jour le statut sur le serveur et recharger les tâches
     const updateTaskStatus = async (taskId, newStatus) => {
         try {
-            const token = localStorage.getItem('access_token')
+            const token = localStorage.getItem('access_token');
             const response = await axios.patch(`http://localhost:8000/api/tasks/${taskId}/`, {
                 status: newStatus,
             }, {
                 headers: { Authorization: `Bearer ${token}` },
-            })
+            });
             // Mettre à jour l'état avec la réponse du serveur
             setTasks(tasks.map(task =>
                 task.id === parseInt(taskId) ? response.data : task
-            ))
-            console.log(`Statut de la tâche ${taskId} mis à jour à ${newStatus}`)
+            ));
+            console.log(`Statut de la tâche ${taskId} mis à jour à ${newStatus}`);
         } catch (error) {
-            console.error('Erreur lors de la mise à jour du statut:', error)
+            console.error('Erreur lors de la mise à jour du statut:', error);
         }
-    }
+    };
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
         out: { opacity: 0, y: -5 },
-    }
+    };
 
     const pageTransition = {
         duration: 0.5,
-    }
+    };
 
-    const items = [{ label: 'Projet' }, { label: 'Instage' }]
+    const items = [{ label: 'Projet' }, { label: 'Instage' }];
 
     const back = {
         icon: 'pi pi-arrow-left',
         command: () => navigate('/intern/me'),
-    }
+    };
 
     const collaborators = [
         { id: 1, lastname: 'John', firstname: 'Doe', avatar: imgIntern },
         { id: 2, lastname: 'Jane', firstname: 'Smith', avatar: imgIntern },
-    ]
+    ];
 
     const statusCategories = [
         { title: 'To-do List', status: 'no' },
         { title: 'En cours', status: 'pending' },
         { title: 'Terminé', status: 'achieved' },
         { title: 'À corriger', status: 'reported' },
-    ]
+    ];
 
     const handleTaskClick = (task) => {
-        setSelectedTask(task)
-        setDialogVisible(true)
-    }
+        setSelectedTask(task);
+        setDialogVisible(true);
+    };
 
     const getColumnColor = (status) => {
         switch (status) {
             case 'no':
-                return 'border-gray-300'
+                return 'border-gray-300';
             case 'pending':
-                return 'border-yellow-200'
+                return 'border-yellow-200';
             case 'achieved':
-                return 'border-green-200'
+                return 'border-green-200';
             case 'reported':
-                return 'border-red-200'
+                return 'border-red-200';
             default:
-                return 'border-gray-300'
+                return 'border-gray-300';
         }
-    }
+    };
 
     const handleDragStart = (e, task) => {
-        e.dataTransfer.setData('taskId', task.id)
-        setDraggedTask(task)
-        e.currentTarget.classList.add('opacity-50', 'scale-95')
-    }
+        e.dataTransfer.setData('taskId', task.id);
+        setDraggedTask(task);
+        e.currentTarget.classList.add('opacity-50', 'scale-95');
+    };
 
     const handleDragEnd = (e) => {
-        e.currentTarget.classList.remove('opacity-50', 'scale-95')
-        setDraggedTask(null)
-    }
+        e.currentTarget.classList.remove('opacity-50', 'scale-95');
+        setDraggedTask(null);
+    };
 
     const handleDrop = (e, newStatus) => {
-        e.preventDefault()
-        const taskId = e.dataTransfer.getData('taskId')
+        e.preventDefault();
+        const taskId = e.dataTransfer.getData('taskId');
         // Mettre à jour immédiatement côté client
         const updatedTasks = tasks.map((task) =>
             task.id === parseInt(taskId)
@@ -133,40 +133,44 @@ const ProjectIntern = () => {
                       updated_at: 'Aujourd\'hui',
                   }
                 : task
-        )
-        setTasks(updatedTasks)
-        setDraggedTask(null)
+        );
+        setTasks(updatedTasks);
+        setDraggedTask(null);
 
         // Mettre à jour le statut sur le serveur
-        updateTaskStatus(taskId, newStatus)
-    }
+        updateTaskStatus(taskId, newStatus);
+    };
+
+    const handleCreateTask = () => {
+        navigate('/intern/planning/create');
+    };
 
     const handleDragOver = (e) => {
-        e.preventDefault()
-    }
+        e.preventDefault();
+    };
 
     const handleDragEnter = (e) => {
-        e.preventDefault()
+        e.preventDefault();
         e.currentTarget.classList.add(
             'bg-gray-50',
             'border-2',
             'border-dashed',
             'border-indigo-400'
-        )
-    }
+        );
+    };
 
     const handleDragLeave = (e) => {
-        e.preventDefault()
+        e.preventDefault();
         e.currentTarget.classList.remove(
             'bg-gray-50',
             'border-2',
             'border-dashed',
             'border-indigo-400'
-        )
-    }
+        );
+    };
 
     if (loading) {
-        return <div></div>
+        return <div></div>;
     }
 
     return (
@@ -207,7 +211,7 @@ const ProjectIntern = () => {
                         </AvatarGroup>
 
                         <p className="text-sm text-gray-500">
-                            Aujourd'hui - le 07 Juin 2025
+                            
                         </p>
 
                         <div className="flex items-center gap-x-4">
@@ -229,6 +233,7 @@ const ProjectIntern = () => {
                     icon="pi pi-plus"
                     label="Ajouter une tâche"
                     className="!h-12 !font-poppins"
+                    onClick={handleCreateTask}
                 />
             </section>
 
@@ -236,7 +241,7 @@ const ProjectIntern = () => {
                 {statusCategories.map((category) => {
                     const filteredTasks = tasks.filter(
                         (task) => task.status === category.status
-                    )
+                    );
                     return (
                         <motion.div
                             key={category.status}
@@ -317,7 +322,7 @@ const ProjectIntern = () => {
                                 ))}
                             </div>
                         </motion.div>
-                    )
+                    );
                 })}
             </section>
 
@@ -403,7 +408,7 @@ const ProjectIntern = () => {
                 )}
             </Dialog>
         </motion.div>
-    )
-}
+    );
+};
 
-export default ProjectIntern
+export default ProjectIntern;
