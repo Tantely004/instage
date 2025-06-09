@@ -6,7 +6,6 @@ export default function useReport() {
     const [error, setError] = useState(null);
     const [dashboardData, setDashboardData] = useState(null);
 
-    // Récupérer les données du tableau de bord
     const fetchDashboardData = async () => {
         setLoading(true);
         setError(null);
@@ -17,7 +16,6 @@ export default function useReport() {
             if (!token) throw new Error("Aucun token trouvé");
             if (!user) throw new Error("Utilisateur non connecté");
 
-            // Déterminer l'URL en fonction du rôle
             let url;
             if (user.role === 'intern') {
                 url = "http://127.0.0.1:8000/api/dashboard/intern/";
@@ -29,20 +27,24 @@ export default function useReport() {
                 throw new Error("Rôle non pris en charge");
             }
 
+            console.log("Fetching data from:", url); // Débogage
             const response = await axios.get(url, {
                 headers: {
-                    Authorization: `Bearer ${token}`, // Correction de la syntaxe
+                    Authorization: `Bearer ${token}`,
                 },
             });
 
             if (response.status === 200) {
                 setDashboardData(response.data);
+                console.log("Data received:", response.data);
                 return response.data;
             } else {
                 setError("Erreur lors de la récupération des données du tableau de bord");
             }
         } catch (err) {
-            setError(err.response?.data?.message || "Erreur lors de la récupération des données");
+            const errorMessage = err.response?.data?.message || err.message || "Erreur inconnue";
+            console.error("Fetch error:", err);
+            setError(errorMessage);
             throw err;
         } finally {
             setLoading(false);

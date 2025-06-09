@@ -11,7 +11,6 @@ const SidebarSupervisor = ({ collapsed, setCollapsed, isDarkMode, setIsDarkMode 
     { label: 'Suivi', icon: 'pi pi-chart-line', path: '/supervisor/follow-up' },
     { label: 'Calendrier', icon: 'pi pi-calendar', path: '/supervisor/planning' },
     { label: 'Ressources', icon: 'pi pi-folder', path: '/supervisor/resources' },
-    { label: 'Évaluations', icon: 'pi pi-star', path: '/evaluations' },
   ];
 
   const navigate = useNavigate()

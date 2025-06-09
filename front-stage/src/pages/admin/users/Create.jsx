@@ -1,4 +1,5 @@
 import { useState } from "react"
+// eslint-disable-next-line no-unused-vars
 import { motion } from "framer-motion"
 import { BreadCrumb } from 'primereact/breadcrumb'
 import { Button } from 'primereact/button'
@@ -29,6 +30,7 @@ const CreateUser = () => {
         department: '',
         position: ''
     })
+    // eslint-disable-next-line no-unused-vars
     const [files, setFiles] = useState([])
 
     const roles = [

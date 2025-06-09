@@ -1,28 +1,46 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 // eslint-disable-next-line no-unused-vars
-import { motion,AnimatePresence } from "framer-motion"
+import { motion, AnimatePresence } from "framer-motion"
 import { Calendar } from "primereact/calendar"
+// eslint-disable-next-line no-unused-vars
 import { locale, addLocale } from 'primereact/api'
 import { Button } from "primereact/button"
 import { Tag } from "primereact/tag"
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import frLocale from '@fullcalendar/core/locales/fr'
+import axios from 'axios'
 
 import imgIntern from "../../../assets/images/fake/intern2.png"
 import imgSupervisor from "../../../assets/images/img_profile_supervisor.png"
 
 const PlanningAdmin = () => {
-    const [ date, setDate ] = useState(null)
+    const [date, setDate] = useState(null)
     const [selectedEvent, setSelectedEvent] = useState(null)
+    const [events, setEvents] = useState([])
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/taskcalendar/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setEvents(response.data);
+            } catch (error) {
+                console.error('Erreur lors du chargement des événements:', error);
+            }
+        }
+        fetchEvents();
+    }, [])
 
     addLocale('fr', {
         firstDayOfWeek: 1,
         dayNames: ['Dimanche', 'Lundi', 'Mardi', 'Mercredi', 'Jeudi', 'Vendredi', 'Samedi'],
-        dayNamesShort: ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.'],
+        dayNamesShort: ['Dim.', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.,', 'Sam.'],
         dayNamesMin: ['D', 'L', 'M', 'M', 'J', 'V', 'S'],
         monthNames: ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'],
-        monthNamesShort: ['Janv.', 'Févr.', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'],
+        monthNamesShort: ['Janv.', 'Févr.,', 'Mars', 'Avr.', 'Mai', 'Juin', 'Juil.', 'Août', 'Sept.', 'Oct.', 'Nov.', 'Déc.'],
         today: 'Aujourd\'hui',
         clear: 'Effacer'
     });
@@ -47,126 +65,22 @@ const PlanningAdmin = () => {
         duration: 0.3,
     }
 
-    const events = [
-        { 
-            id: 1, 
-            title: 'Réunion avec encadrant', 
-            date: '2025-05-20',
-            extendedProps: {
-                supervisor: {
-                    lastname: "MANDIMBISOA",
-                    firstname: "Laza",
-                    avatar: imgSupervisor,
-                },
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'internship',
-                description: [
-                    'Point hebdomadaire pour discuter des progrès du stage.',
-                    'Planifier les prochaines étapes.'
-                ]
-            },
-            backgroundColor: '#4B5563',
-            borderColor: '#4B5563'
-        },
-        { 
-            id: 2, 
-            title: 'Tâche: Analyse données', 
-            date: '2025-05-22',
-            extendedProps: {
-                supervisor: {
-                    lastname: "MANDIMBISOA",
-                    firstname: "Laza",
-                    avatar: imgSupervisor,
-                },
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'company',
-                description: [
-                    'Analyser les données clients.',
-                    'Préparer le rapport mensuel de l’entreprise.'
-                ]
-            }
-        },
-        { 
-            id: 3, 
-            title: 'Rédaction rapport intermédiaire', 
-            date: '2025-05-25',
-            extendedProps: {
-                supervisor: {
-                    lastname: "MANDIMBISOA",
-                    firstname: "Laza",
-                    avatar: imgSupervisor,
-                },
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'internship',
-                description: [
-                    'Préparer le rapport intermédiaire du stage.',
-                    'Obtenir la validation par l’encadrant.'
-                ]
-            }
-        },
-        { 
-            id: 4, 
-            title: 'Formation logiciel interne', 
-            date: '2025-05-27',
-            extendedProps: {
-                supervisor: {
-                    lastname: "MANDIMBISOA",
-                    firstname: "Laza",
-                    avatar: imgSupervisor,
-                },
-                time: '12:00',
-                room: '103',
-                priority: 'Urgent',
-                type: 'company',
-                description: [
-                    'Participer à la formation sur l’outil CRM.',
-                    'Appliquer les connaissances à l’équipe.'
-                ]
-            }
-        },
-        { 
-            id: 5, 
-            title: 'Point projet équipe', 
-            date: '2025-05-29',
-            extendedProps: {
-                supervisor: {
-                    lastname: "MANDIMBISOA",
-                    firstname: "Laza",
-                    avatar: imgSupervisor,
-                },
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'company',
-                description: [
-                    'Réunion avec l’équipe projet.',
-                    'Alignement des tâches.'
-                ]
-            }
-        }
-    ]
-
     const handleEventClick = (info) => {
+        const event = info.event;
         setSelectedEvent({
-            title: info.event.title,
-            date: info.event.startStr,
-            description: info.event.extendedProps.description,
+            title: event.title,
+            date: event.startStr,
+            description: event.extendedProps.description,
             supervisor: {
-                lastname: info.event.extendedProps.supervisor.lastname,
-                firstname: info.event.extendedProps.supervisor.firstname,
-                avatar: info.event.extendedProps.supervisor.avatar,
+                lastname: event.extendedProps.instructor_id.split('-')[0],
+                firstname: event.extendedProps.instructor_id.split('-')[1] || '',
+                avatar: imgSupervisor,
             },
-            type: info.event.extendedProps.type,
-            priority: info.event.extendedProps.priority,
-            time: info.event.extendedProps.time,
-            room: info.event.extendedProps.room,
-        })
+            type: event.extendedProps.type,
+            priority: event.extendedProps.priority,
+            time: event.extendedProps.time,
+            room: event.extendedProps.room,
+        });
     }
 
     return (
@@ -246,7 +160,7 @@ const PlanningAdmin = () => {
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
                         <FullCalendar
-                            plugins={[ dayGridPlugin ]}
+                            plugins={[dayGridPlugin]}
                             initialView="dayGridMonth"
                             weekends={false}
                             events={events}
@@ -263,8 +177,9 @@ const PlanningAdmin = () => {
                                 </div>
                             )}
                             dayHeaderClassNames="bg-indigo-50 text-indigo-700 font-semibold"
-                            dayCellClassNames="border Fulgrid-gray-200"
+                            dayCellClassNames="border-gray-200"
                             eventClassNames="border-none rounded-md text-white"
+                            eventBackgroundColor="#8884d8"
                         />
                     </div>
                 </div>
@@ -306,7 +221,7 @@ const PlanningAdmin = () => {
                                             Encadreur
                                         </h5>
                                         <p className="-mt-2 font-medium">
-                                            { selectedEvent.supervisor.lastname } { selectedEvent.supervisor.firstname }
+                                            {selectedEvent.supervisor.lastname} {selectedEvent.supervisor.firstname}
                                         </p>
                                     </div>
                                 </div>
@@ -322,7 +237,7 @@ const PlanningAdmin = () => {
                                             </span>
                                             <Tag value={`Porte ${selectedEvent.room}`} severity="secondary"/>
                                         </p>
-                                        <p>{ selectedEvent.time }</p>
+                                        <p>{selectedEvent.time}</p>
                                     </div>
                                 </div>
 

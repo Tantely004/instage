@@ -23,10 +23,13 @@ const PlanningIndex = () => {
     useEffect(() => {
         const fetchTasks = async () => {
             try {
-                const response = await axios.get('http://127.0.0.1:8000/api/taskcalendar/')
-                setEvents(response.data)
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/taskcalendar/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setEvents(response.data);
             } catch (error) {
-                console.error('Erreur lors du chargement des tâches:', error)
+                console.error('Erreur lors du chargement des tâches:', error);
             }
         }
         fetchTasks()
@@ -64,17 +67,24 @@ const PlanningIndex = () => {
     }
 
     const handleEventClick = (info) => {
+        const event = info.event;
         setSelectedEvent({
-            title: info.event.title,
-            date: info.event.startStr,
-            description: info.event.extendedProps.description,
-            priority: info.event.extendedProps.priority,
-            status: info.event.extendedProps.status,
-            progression: info.event.extendedProps.progression,
-        })
+            title: event.title,
+            date: event.startStr,
+            ...(event.extendedProps.type === 'task' ? {
+                description: event.extendedProps.description,
+                priority: event.extendedProps.priority,
+                status: event.extendedProps.status,
+                progression: event.extendedProps.progression,
+            } : {
+                time: event.extendedProps.time,
+                room: event.extendedProps.room,
+                status: event.extendedProps.status,
+            }),
+            type: event.extendedProps.type,
+        });
     }
 
-    // Mapper les priorités et statuts pour un affichage plus lisible
     const getPriorityLabel = (priority) => {
         switch (priority.toUpperCase()) {
             case 'HIGH': return 'Urgent'
@@ -90,6 +100,8 @@ const PlanningIndex = () => {
             case 'PROGRESSING': return 'En cours'
             case 'COMPLETED': return 'Terminé'
             case 'CANCELLED': return 'Annulé'
+            case 'PLANNED': return 'Planifié'
+            case 'IN_PROGRESS': return 'En cours'
             default: return status
         }
     }
@@ -186,11 +198,13 @@ const PlanningIndex = () => {
                             eventContent={(eventInfo) => (
                                 <div className="p-1 cursor-pointer">
                                     <p className="text-sm font-semibold text-white">{eventInfo.event.title}</p>
+                                    <p className="text-xs text-white">{eventInfo.event.extendedProps.type === 'interview' ? 'Entretien' : 'Tâche'}</p>
                                 </div>
                             )}
                             dayHeaderClassNames="bg-indigo-50 text-indigo-700 font-semibold"
                             dayCellClassNames="border-gray-200"
                             eventClassNames="border-none rounded-md text-white"
+                            eventBackgroundColor={(info) => info.event.extendedProps.type === 'interview' ? '#8884d8' : '#4B5563'}
                         />
                     </div>
                 </div>
@@ -214,33 +228,39 @@ const PlanningIndex = () => {
 
                             <div className="mt-4 mb-4">
                                 <h3 className="text-xl font-bold text-indigo-500">{selectedEvent.title}</h3>
-                                <div className="mt-2 flex gap-2">
-                                    <Tag 
-                                        value={getPriorityLabel(selectedEvent.priority)}
-                                        severity={
-                                            getPriorityLabel(selectedEvent.priority) === 'Urgent' ? 'danger' :
-                                            getPriorityLabel(selectedEvent.priority) === 'Secondaire' ? 'secondary' : 'info'
-                                        }
-                                    />
-                                    <Tag 
-                                        value={getStatusLabel(selectedEvent.status)}
-                                        severity={
-                                            getStatusLabel(selectedEvent.status) === 'Terminé' ? 'success' :
-                                            getStatusLabel(selectedEvent.status) === 'Annulé' ? 'danger' : 'warning'
-                                        }
-                                    />
-                                </div>
+                                {selectedEvent.type === 'task' && (
+                                    <div className="mt-2 flex gap-2">
+                                        <Tag 
+                                            value={getPriorityLabel(selectedEvent.priority)}
+                                            severity={
+                                                getPriorityLabel(selectedEvent.priority) === 'Urgent' ? 'danger' :
+                                                getPriorityLabel(selectedEvent.priority) === 'Secondaire' ? 'secondary' : 'info'
+                                            }
+                                        />
+                                        <Tag 
+                                            value={getStatusLabel(selectedEvent.status)}
+                                            severity={
+                                                getStatusLabel(selectedEvent.status) === 'Terminé' ? 'success' :
+                                                getStatusLabel(selectedEvent.status) === 'Annulé' ? 'danger' : 'warning'
+                                            }
+                                        />
+                                    </div>
+                                )}
                                 <div className='mt-4 flex items-center gap-4'>
-                                    <Button 
-                                        icon='pi pi-refresh'
-                                        label="Réorganiser"
-                                        className='!bg-transparent hover:!bg-gray-200 !px-2 !text-black/50 py-1 !text-sm !border !border-gray-200'
-                                    />
-                                    <Button 
-                                        icon='pi pi-times-circle'
-                                        label="Reporter"
-                                        className='!bg-transparent hover:!bg-gray-200 !px-2 !text-black/50 py-1 !text-sm !border !border-gray-200'
-                                    />
+                                    {selectedEvent.type === 'task' && (
+                                        <>
+                                            <Button 
+                                                icon='pi pi-refresh'
+                                                label="Réorganiser"
+                                                className='!bg-transparent hover:!bg-gray-200 !px-2 !text-black/50 py-1 !text-sm !border !border-gray-200'
+                                            />
+                                            <Button 
+                                                icon='pi pi-times-circle'
+                                                label="Reporter"
+                                                className='!bg-transparent hover:!bg-gray-200 !px-2 !text-black/50 py-1 !text-sm !border !border-gray-200'
+                                            />
+                                        </>
+                                    )}
                                 </div>
                             </div>
                             
@@ -252,14 +272,30 @@ const PlanningIndex = () => {
                                             <span className='font-medium'>
                                                 {new Date(selectedEvent.date).toLocaleDateString('fr-FR')}
                                             </span>
-                                            <Tag value={`Progression: ${selectedEvent.progression}%`} severity="info"/>
+                                            {selectedEvent.type === 'interview' && (
+                                                <Tag value={`Porte ${selectedEvent.room}`} severity="secondary"/>
+                                            )}
+                                            {selectedEvent.type === 'task' && selectedEvent.progression && (
+                                                <Tag value={`Progression: ${selectedEvent.progression}%`} severity="info"/>
+                                            )}
                                         </p>
+                                        {selectedEvent.type === 'interview' && selectedEvent.time && (
+                                            <p>{selectedEvent.time}</p>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
                                     <i className='pi pi-briefcase text-indigo-500'/>
-                                    <p className="text-gray-700">{selectedEvent.description || 'Aucune description'}</p>
+                                    {selectedEvent.type === 'task' ? (
+                                        <p className="text-gray-700">{selectedEvent.description || 'Aucune description'}</p>
+                                    ) : (
+                                        <ul className="list-disc pl-5">
+                                            {selectedEvent.description && selectedEvent.description.map((item, index) => (
+                                                <li key={index} className="text-gray-700">{item}</li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>

@@ -1,21 +1,39 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 // eslint-disable-next-line no-unused-vars
 import { motion, AnimatePresence } from 'framer-motion'
 import { Button } from "primereact/button"
 import { Calendar } from "primereact/calendar"
 import { Tag } from 'primereact/tag'
+// eslint-disable-next-line no-unused-vars
 import { locale, addLocale } from 'primereact/api'
 import FullCalendar from '@fullcalendar/react'
 import dayGridPlugin from '@fullcalendar/daygrid'
 import frLocale from '@fullcalendar/core/locales/fr'
 import { useNavigate } from 'react-router-dom'
+import axios from 'axios'
 
 import imgIntern from "../../../assets/images/fake/intern2.png"
 
 const CalendarSupervisor = () => {
     const navigate = useNavigate()
-    const [ date, setDate ] = useState(null)
+    const [date, setDate] = useState(null)
     const [selectedEvent, setSelectedEvent] = useState(null)
+    const [events, setEvents] = useState([])
+
+    useEffect(() => {
+        const fetchEvents = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await axios.get('http://127.0.0.1:8000/api/taskcalendar/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setEvents(response.data);
+            } catch (error) {
+                console.error('Erreur lors du chargement des événements:', error);
+            }
+        }
+        fetchEvents();
+    }, [])
 
     addLocale('fr', {
         firstDayOfWeek: 1,
@@ -56,109 +74,37 @@ const CalendarSupervisor = () => {
             time: "3h",
         },
         {
-            id: 1,
+            id: 2,
             firstname: "Mirindra",
             avatar: imgIntern,
             time: "3h",
         },
         {
-            id: 1,
+            id: 3,
             firstname: "Mirindra",
             avatar: imgIntern,
             time: "3h",
         },
     ]
 
-    const events = [
-        { 
-            id: 1, 
-            title: 'Réunion avec encadrant', 
-            date: '2025-05-20',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'internship',
-                description: [
-                    'Point hebdomadaire pour discuter des progrès du stage.',
-                    'Planifier les prochaines étapes.'
-                ]
-            },
-            backgroundColor: '#4B5563',
-            borderColor: '#4B5563'
-        },
-        { 
-            id: 2, 
-            title: 'Tâche: Analyse données', 
-            date: '2025-05-22',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Optionnel',
-                type: 'company',
-                description: [
-                    'Analyser les données clients.',
-                    'Préparer le rapport mensuel de l’entreprise.'
-                ]
-            }
-        },
-        { 
-            id: 3, 
-            title: 'Rédaction rapport intermédiaire', 
-            date: '2025-05-25',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'internship',
-                description: [
-                    'Préparer le rapport intermédiaire du stage.',
-                    'Obtenir la validation par l’encadrant.'
-                ]
-            }
-        },
-        { 
-            id: 4, 
-            title: 'Formation logiciel interne', 
-            date: '2025-05-27',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Urgent',
-                type: 'company',
-                description: [
-                    'Participer à la formation sur l’outil CRM.',
-                    'Appliquer les connaissances à l’équipe.'
-                ]
-            }
-        },
-        { 
-            id: 5, 
-            title: 'Point projet équipe', 
-            date: '2025-05-29',
-            extendedProps: {
-                time: '12:00',
-                room: '103',
-                priority: 'Secondaire',
-                type: 'company',
-                description: [
-                    'Réunion avec l’équipe projet.',
-                    'Alignement des tâches.'
-                ]
-            }
-        }
-    ]
-
     const handleEventClick = (info) => {
+        const event = info.event;
         setSelectedEvent({
-            title: info.event.title,
-            date: info.event.startStr,
-            description: info.event.extendedProps.description,
-            type: info.event.extendedProps.type,
-            priority: info.event.extendedProps.priority,
-            time: info.event.extendedProps.time,
-            room: info.event.extendedProps.room,
-        })
+            title: event.title,
+            date: event.startStr,
+            ...(event.extendedProps.type === 'task' ? {
+                description: event.extendedProps.description,
+                priority: event.extendedProps.priority,
+                status: event.extendedProps.status,
+                progression: event.extendedProps.progression,
+            } : {
+                time: event.extendedProps.time,
+                room: event.extendedProps.room,
+                status: event.extendedProps.status,
+                intern_id: event.extendedProps.intern_id,
+            }),
+            type: event.extendedProps.type,
+        });
     }
 
     return (
@@ -258,7 +204,7 @@ const CalendarSupervisor = () => {
                                                 <strong>{sender.firstname}</strong> a soumis un chronogramme
                                             </p>
                                             <p className='text-xs text-gray-400'>
-                                                Il y a { sender.time }
+                                                Il y a {sender.time}
                                             </p>
                                         </div>
                                     </div>
@@ -288,7 +234,7 @@ const CalendarSupervisor = () => {
                     </div>
                     <div className="bg-white border border-gray-200 rounded-lg p-4 mt-4">
                         <FullCalendar
-                            plugins={[ dayGridPlugin ]}
+                            plugins={[dayGridPlugin]}
                             initialView="dayGridMonth"
                             weekends={false}
                             events={events}
@@ -302,11 +248,13 @@ const CalendarSupervisor = () => {
                             eventContent={(eventInfo) => (
                                 <div className="p-1 cursor-pointer">
                                     <p className="text-sm font-semibold text-white">{eventInfo.event.title}</p>
+                                    <p className="text-xs text-white">{eventInfo.event.extendedProps.type === 'interview' ? `(${eventInfo.event.extendedProps.intern_id})` : ''}</p>
                                 </div>
                             )}
                             dayHeaderClassNames="bg-indigo-50 text-indigo-700 font-semibold"
-                            dayCellClassNames="border Fulgrid-gray-200"
+                            dayCellClassNames="border-gray-200"
                             eventClassNames="border-none rounded-md text-white"
+                            eventBackgroundColor={(info) => info.event.extendedProps.type === 'interview' ? '#8884d8' : '#4B5563'}
                         />
                     </div>
                 </div>
@@ -330,14 +278,22 @@ const CalendarSupervisor = () => {
 
                             <div className="mt-4 mb-4">
                                 <h3 className="text-lg font-bold text-indigo-500">{selectedEvent.title}</h3>
-                                <Tag 
-                                    value={selectedEvent.priority}
-                                    severity={
-                                        selectedEvent.priority === 'Urgent' ? 'danger' :
-                                        selectedEvent.priority === 'Secondaire' ? 'secondary' : 'info'
-                                    }
-                                    className="mt-2"
-                                />
+                                {selectedEvent.type === 'interview' && (
+                                    <div className='mt-4 flex items-center gap-4'>
+                                        <img
+                                            src={imgIntern}
+                                            className="w-8 h-8 rounded-full"
+                                        />
+                                        <div className="flex flex-col space-y-2">
+                                            <h5 className="text-sm text-gray-400">
+                                                Stagiaire
+                                            </h5>
+                                            <p className="-mt-2 font-medium">
+                                                {selectedEvent.intern_id}
+                                            </p>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className='mt-4 flex items-center gap-4'>
                                     <Button 
                                         icon='pi pi-refresh'
@@ -360,19 +316,25 @@ const CalendarSupervisor = () => {
                                             <span className='font-medium'>
                                                 {new Date(selectedEvent.date).toLocaleDateString('fr-FR')}
                                             </span>
-                                            <Tag value={`Porte ${selectedEvent.room}`} severity="secondary"/>
+                                            {selectedEvent.type === 'interview' && selectedEvent.room && (
+                                                <Tag value={`Porte ${selectedEvent.room}`} severity="secondary"/>
+                                            )}
                                         </p>
-                                        <p>{ selectedEvent.time }</p>
+                                        {selectedEvent.type === 'interview' && selectedEvent.time && (
+                                            <p>{selectedEvent.time}</p>
+                                        )}
                                     </div>
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>
                                     <i className='pi pi-briefcase text-indigo-500'/>
-                                    <ul className="list-disc pl-5">
-                                        {selectedEvent.description.map((item, index) => (
-                                            <li key={index} className="text-gray-700">{item}</li>
-                                        ))}
-                                    </ul>
+                                    {selectedEvent.type === 'interview' && (
+                                        <ul className="list-disc pl-5">
+                                            {selectedEvent.description && selectedEvent.description.map((item, index) => (
+                                                <li key={index} className="text-gray-700">{item}</li>
+                                            ))}
+                                        </ul>
+                                    )}
                                 </div>
 
                                 <div className='grid grid-cols-[15%_85%] border-t border-gray-300 pt-4'>

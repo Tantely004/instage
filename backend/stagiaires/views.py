@@ -216,14 +216,13 @@ class DashboardInternAPIView(APIView):  # Vue de récupération et traitement de
             "supervisions": supervisions
         }, status=status.HTTP_200_OK)
         
-class DashboardInstructorAPIView(APIView): #Vue de récupération et traitement des données du DashboardSupervisor
+class DashboardInstructorAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request):
         user = request.user
         today = timezone.now().date()
 
-        # Vérifier le rôle de l'utilisateur
         if user.role != 'instructor':
             return Response(
                 {"message": "Accès réservé aux encadreurs."},
@@ -238,44 +237,53 @@ class DashboardInstructorAPIView(APIView): #Vue de récupération et traitement 
                 status=status.HTTP_404_NOT_FOUND
             )
 
-        # kpi
-        # interns: Nombre de stagiaires encadrés
-        internships = Internship.objects.filter(instructor=instructor)
-        interns_count = internships.values('intern').distinct().count()
+        # KPI
+        try:
+            internships = Internship.objects.filter(instructor=instructor)
+            interns_count = internships.values('intern').distinct().count()
 
-        # interview: Nombre d'entrevues prévues aujourd'hui
-        interviews_count = Interview.objects.filter(
-            internship__instructor=instructor,
-            date=today,
-            status='planned'
-        ).count()
+            interviews_count = Interview.objects.filter(
+                internship__instructor=instructor,
+                date=today,
+                status='planned'
+            ).count()
 
-        # toDoCompleted: Nombre total de tâches complétées par tous les stagiaires encadrés
-        to_do_completed = AssignmentTask.objects.filter(
-            intern__in=internships.values('intern'),
-            status='completed'
-        ).count()
+            # Corriger la requête pour utiliser task__status
+            to_do_completed = AssignmentTask.objects.filter(
+                intern__in=internships.values('intern'),
+                task__status='completed'
+            ).count()
 
-        # receivedReports: Nombre de rapports soumis aujourd'hui
-        received_reports = Report.objects.filter(
-            interview__internship__instructor=instructor,
-            status='submitted',
-            submitted_date__date=today
-        ).count()
+            received_reports = Report.objects.filter(
+                interview__internship__instructor=instructor,
+                status='submitted',
+                submitted_date__date=today
+            ).count()
 
-        kpi = {
-            "interns": interns_count,
-            "interview": interviews_count,
-            "toDoCompleted": to_do_completed,
-            "receivedReports": received_reports
-        }
+            kpi = {
+                "interns": interns_count,
+                "interview": interviews_count,
+                "toDoCompleted": to_do_completed,
+                "receivedReports": received_reports
+            }
+        except Exception as e:
+            return Response(
+                {"message": "Erreur lors du calcul des KPI."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
-        # supervisions: Liste des encadrements (date >= aujourd'hui)
-        reports = Report.objects.filter(
-            interview__internship__instructor=instructor,
-            interview__date__gte=today
-        )
-        supervisions = [{"report": ReportSerializer(report).data} for report in reports]
+        # Supervisions
+        try:
+            reports = Report.objects.filter(
+                interview__internship__instructor=instructor,
+                interview__date__gte=today
+            ).prefetch_related('interview__internship__intern__user')
+            supervisions = [{"report": ReportSerializer(report).data} for report in reports]
+        except Exception as e:
+            return Response(
+                {"message": "Erreur lors de la récupération des supervisions."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
 
         return Response({
             "kpi": kpi,
@@ -642,30 +650,99 @@ class CreatePlanningAPIView(APIView): #Vue d'enregistrement d'un planning (chron
                 status=status.HTTP_500_INTERNAL_SERVER_ERROR
             )
 
-class TaskCalendarAPIView(generics.ListAPIView): #Vue d'affichage des tâches dans la base de données sur le calendrier
-    serializer_class = TaskSerializer
+class TaskCalendarAPIView(APIView):
+    permission_classes = [IsAuthenticated]
 
-    def get_queryset(self):
-        return Task.objects.all().order_by('start_date')
+    def get(self, request, *args, **kwargs):
+        user = request.user
+        today = timezone.now().date()
+        events = []
 
-    def list(self, request, *args, **kwargs):
-        queryset = self.get_queryset()
-        serializer = self.serializer_class(queryset, many=True)
-        events = [
-            {
-                'id': task.id,
-                'title': task.title,
-                'start': task.start_date.isoformat(),
-                'end': task.end_date.isoformat() if task.end_date else None,
-                'extendedProps': {
-                    'description': task.description or '',
-                    'priority': task.priority,
-                    'status': task.status,
-                    'progression': task.progression,
-                }
-            }
-            for task in queryset
-        ]
+        # Tâches uniquement pour les interns
+        if user.role == 'intern':
+            try:
+                intern = Internship.objects.filter(intern__user=user).first()
+                if intern:
+                    tasks = Task.objects.all().order_by('start_date')
+                    for task in tasks:
+                        current_date = task.start_date
+                        while current_date <= task.end_date if task.end_date else current_date <= today:
+                            events.append({
+                                'id': f'task_{task.id}_{current_date.isoformat()}',
+                                'title': task.title,
+                                'start': current_date.isoformat(),
+                                'end': (current_date + timedelta(days=1)).isoformat(),
+                                'extendedProps': {
+                                    'description': task.description or '',
+                                    'priority': task.priority,
+                                    'status': task.status,
+                                    'progression': task.progression,
+                                    'type': 'task',
+                                }
+                            })
+                            current_date += timedelta(days=1)
+
+                    interviews = Interview.objects.filter(internship=intern)
+                    for interview in interviews:
+                        events.append({
+                            'id': f'interview_{interview.id}',
+                            'title': f'Entrevue avec {interview.internship.instructor.user.name}',
+                            'start': interview.date.isoformat(),
+                            'end': (interview.date + timedelta(days=1)).isoformat(),
+                            'extendedProps': {
+                                'time': interview.time.isoformat(),
+                                'room': interview.room,
+                                'status': interview.status,
+                                'type': 'interview',
+                            }
+                        })
+            except Exception as e:
+                print(f"Erreur pour intern {user.identifier}: {e}")
+
+        elif user.role == 'instructor':
+            try:
+                instructor = Instructor.objects.get(user=user)
+                internships = Internship.objects.filter(instructor=instructor)
+                for internship in internships:
+                    interviews = Interview.objects.filter(internship=internship)
+                    for interview in interviews:
+                        events.append({
+                            'id': f'interview_{interview.id}',
+                            'title': f'Entrevue avec {internship.intern.user.name}',
+                            'start': interview.date.isoformat(),
+                            'end': (interview.date + timedelta(days=1)).isoformat(),
+                            'extendedProps': {
+                                'time': interview.time.isoformat(),
+                                'room': interview.room,
+                                'status': interview.status,
+                                'type': 'interview',
+                                'intern_id': internship.intern.user.identifier,
+                            }
+                        })
+            except Exception as e:
+                print(f"Erreur pour instructor {user.identifier}: {e}")
+
+        elif user.role == 'administrator':
+            try:
+                interviews = Interview.objects.all()
+                for interview in interviews:
+                    events.append({
+                        'id': f'interview_{interview.id}',
+                        'title': f'Entrevue: {interview.internship.instructor.user.name} avec {interview.internship.intern.user.name}',
+                        'start': interview.date.isoformat(),
+                        'end': (interview.date + timedelta(days=1)).isoformat(),
+                        'extendedProps': {
+                            'time': interview.time.isoformat(),
+                            'room': interview.room,
+                            'status': interview.status,
+                            'type': 'interview',
+                            'instructor_id': interview.internship.instructor.user.identifier,
+                            'intern_id': interview.internship.intern.user.identifier,
+                        }
+                    })
+            except Exception as e:
+                print(f"Erreur pour admin: {e}")
+
         return Response(events)
 
 class TaskListAPIView(APIView):  # Vue de récupération et affichage des tâches dans la page KanBan Intern
