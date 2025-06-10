@@ -1,22 +1,46 @@
-import { useState } from "react"
-// eslint-disable-next-line no-unused-vars
-import { motion } from "framer-motion"
+import { useState } from 'react'
 import { useNavigate } from "react-router-dom"
-import { BreadCrumb } from "primereact/breadcrumb"
-import { Tag } from "primereact/tag"
+// eslint-disable-next-line no-unused-vars
+import { motion } from 'framer-motion'
+import { BreadCrumb } from 'primereact/breadcrumb'
+import { Tag } from 'primereact/tag'
 import { AvatarGroup } from "primereact/avatargroup"
 import { Avatar } from "primereact/avatar"
 import { Button } from "primereact/button"
 import { Dialog } from "primereact/dialog"
+import { InputText } from "primereact/inputtext"
+import { MultiSelect } from 'primereact/multiselect'
+import { Editor } from 'primereact/editor'
+import { Calendar } from "primereact/calendar"
+import { Dropdown } from "primereact/dropdown"
+import { FileUpload } from "primereact/fileupload"
 
 import imgIntern from "../../../assets/images/fake/intern2.png"
 
 const ProjectSupervisor = () => {
     const navigate = useNavigate()
     const [selectedTask, setSelectedTask] = useState(null)
-    const [ taskDialog, setTaskDialog ] = useState(false)
     const [dialogVisible, setDialogVisible] = useState(false)
+    const [ selectedIntern, setSelectedIntern ] = useState(false)
+    const [ selectedSeverity, setSelectedSeverity ] = useState(false)
+    const [ selectedStatus, setSelectedStatus ] = useState(false)
+    const [taskDialog, setTaskDialog] = useState(false)
     const [draggedTask, setDraggedTask] = useState(null)
+
+    const severities = [
+        { name: 'Urgent', value: 'urgent' },
+        { name: 'Secondaire', value: 'secondary' },
+        { name: 'Optionnel', value: 'optional' },
+    ]
+
+    const taskStatuses = [
+        { name: 'À faire', value: 'todo' },
+        { name: 'En cours', value: 'in-progress' },
+        { name: 'Terminé', value: 'done' },
+        { name: 'Annulé', value: 'cancelled' },
+    ]
+
+
     const [tasks, setTasks] = useState([
         {
             id: 1,
@@ -265,16 +289,25 @@ const ProjectSupervisor = () => {
         e.currentTarget.classList.remove('bg-gray-50', 'border-2', 'border-dashed', 'border-indigo-400')
     }
 
+    const internTemplate = (option) => {
+        return (
+            <div className="flex items-center space-x-2">
+                <img src={option.avatar} className='w-8 h-8 rounded-full'/>
+                <div>{option.lastname} {option.firstname}</div>
+            </div>
+        );
+    };
+
     return (
         <motion.div
             initial="initial"
             animate="in"
             exit="out"
             variants={pageVariants}
-            transition={pageTransition}
-            className={`mb-12 max-w-[89vw]`} 
+            transition={pageTransition} 
+            className={`mb-12 max-w-[89vw]`}
         >
-            <section className='flex justify-between items-center gap-x-28 w-full'>
+             <section className='flex justify-between items-center space-x-28'>
                 <div>
                     <div className='flex items-center space-x-4'>
                         <BreadCrumb 
@@ -330,10 +363,10 @@ const ProjectSupervisor = () => {
                     className='!h-12 !font-poppins'
                     onClick={() => setTaskDialog(true)}
                 />
-            </section>
+             </section>
 
-            <section className='mt-10 grid grid-cols-4 gap-8'>
-                {statusCategories.map((category) => {
+             <section className='mt-10 grid grid-cols-4 gap-8'>
+             {statusCategories.map((category) => {
                     const filteredTasks = tasks.filter(task => task.status === category.status)
                     return (
                         <motion.div 
@@ -404,7 +437,8 @@ const ProjectSupervisor = () => {
                         </motion.div>
                     )
                 })}
-            </section>
+             </section>
+
 
             <Dialog
                 header={`Modifié récemment`}
@@ -497,8 +531,107 @@ const ProjectSupervisor = () => {
                 )}
             </Dialog>
 
-            <Dialog>
-                
+            <Dialog
+                header="Ajouter une tache"
+                visible={taskDialog}
+                onHide={() => setTaskDialog(false)}
+                className="!font-poppins !w-[60vw] !pb-8"
+                headerClassName='!font-poppins !font-semibold !text-indigo-400'
+            >
+                <p className='-mt-1'>
+                    Remplissez le formulaire de création de tache pour l'organisation du projet à réaliser
+                </p>
+
+                <form>
+                    <div className='grid grid-cols-2 items-center gap-8'>
+                        <div className="mt-8 flex flex-col space-y-3">
+                            <label><i className="pi pi-file text-indigo-400 mr-3"/>Intitulé</label>
+                            <InputText 
+                                size="small" 
+                                className="w-full" 
+                            />
+                        </div>
+
+                        <div className="mt-8 flex flex-col space-y-3">
+                            <label><i className="pi pi-users text-indigo-400 mr-3"/>Assigné pour</label>
+                            <MultiSelect 
+                                value={selectedIntern} 
+                                options={collaborators} 
+                                onChange={(e) => setSelectedIntern(e.value)} 
+                                placeholder="Sélectionner" 
+                                itemTemplate={internTemplate}
+                                className='!font-poppins'
+                                panelClassName='!font-poppins'
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-3 mt-4">
+                        <label><i className="pi pi-align-left text-indigo-400 mr-3"/>Détail</label>
+                        <Editor className="h-32 text-sm" />
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mt-20">
+                        <div className="flex flex-col space-y-3">
+                            <label><i className="pi pi-calendar text-indigo-400 mr-3"/>Date de début</label>
+                            <Calendar size="small" className="w-full" />
+                        </div>
+                        <div className="flex flex-col space-y-3">
+                            <label><i className="pi pi-calendar text-indigo-400 mr-3"/>Date de fin</label>
+                            <Calendar size="small" className="w-full" />
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-6 mt-5">
+                        <div className="flex flex-col space-y-3">
+                            <label><i className="pi pi-exclamation-circle text-indigo-400 mr-3"/>Priorité</label>
+                            <Dropdown 
+                                value={selectedSeverity} 
+                                onChange={(e) => setSelectedSeverity(e.value)} 
+                                options={severities} 
+                                optionLabel="name" 
+                                optionValue="value" 
+                                placeholder="Sélectionner" 
+                                className="w-full" 
+                            />
+                        </div>
+                        <div className="flex flex-col space-y-3">
+                            <label><i className="pi pi-hourglass text-indigo-400 mr-3"/>État de la tâche</label>
+                            <Dropdown 
+                                value={selectedStatus} 
+                                onChange={(e) => setSelectedStatus(e.value)} 
+                                options={taskStatuses} 
+                                optionLabel="name" 
+                                optionValue="value" 
+                                placeholder="Sélectionner" 
+                                className="w-full" 
+                            />
+                        </div>
+                    </div>
+
+                    <div className="flex flex-col space-y-3 mt-5">
+                        <label><i className="pi pi-link text-indigo-400 mr-3"/>Pièces jointes</label>
+                        <FileUpload 
+                            mode="basic" 
+                            name="demo[]" 
+                            maxFileSize={1000000} 
+                            chooseLabel="Choisir un fichier" 
+                        />
+                    </div>
+
+                    <div className='flex justify-end gap-x-6 mt-8 mb-4'>
+                        <Button 
+                            label='Annuler'
+                            className='!bg-gray-200 !px-6 !h-10 !font-poppins !border-none !text-black/70'
+                            onClick={() => setTaskDialog(false)}
+                        />
+
+                        <Button 
+                            label='Valider'
+                            className='!h-10 !px-6'
+                        />
+                    </div>
+                </form>
             </Dialog>
         </motion.div>
     )
