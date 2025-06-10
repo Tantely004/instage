@@ -251,6 +251,12 @@ class Project(models.Model):
     title = models.CharField(max_length=100)
     internship = models.ForeignKey(Internship, on_delete=models.CASCADE, null=True)
 
+class AssignmentProject(models.Model):
+    intern = models.ForeignKey(Intern, on_delete=models.CASCADE, related_name='assignments', null=True)
+    instructor = models.ForeignKey(Instructor, on_delete=models.CASCADE, related_name='supervised_assignments', null=True)
+    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='assignments', null=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
 # ===================== #
 #       PLANNING        #
 # ===================== #

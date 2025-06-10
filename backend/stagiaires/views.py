@@ -1114,16 +1114,15 @@ class FollowUpAdminAPIView(APIView):
             'reports': reports_data,
         })
 
-logger = logging.getLogger(__name__)
 
 class ProjectTaskListAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, project_id):
-        logger.info(f"Utilisateur connecté: {request.user.name}, Rôle: {request.user.role}")
+
         allowed_roles = ['administrator', 'instructor']
         if request.user.role not in allowed_roles:
-            logger.warning(f"Accès refusé pour {request.user.name} (rôle: {request.user.role})")
+    
             return Response({"message": "Accès réservé aux administrateurs et instructeurs."}, status=status.HTTP_403_FORBIDDEN)
 
         try:
@@ -1165,18 +1164,14 @@ class ProjectTaskListAPIView(APIView):
 
         return Response(task_data, status=status.HTTP_200_OK)
 
-logger = logging.getLogger(__name__)
-
 class FollowUpSupervisorAPIView(APIView):
     permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
-        logger.info(f"Utilisateur connecté: {request.user.name}, Rôle: {request.user.role}")
         allowed_roles = ['instructor', 'administrator']
         if request.user.role not in allowed_roles:
-            logger.warning(f"Accès refusé pour {request.user.name} (rôle: {request.user.role})")
+    
             return Response({"message": "Accès réservé aux instructeurs et administrateurs."}, status=403)
-
         today = timezone.now().date()  # 2025-06-10
         interns_data = []
         projects_data = []
@@ -1226,3 +1221,67 @@ class FollowUpSupervisorAPIView(APIView):
             'projects': projects_data,
             'reports': reports_data,
         })
+    
+class AssignmentProjectAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request):
+        if request.user.role not in ['administrator', 'instructor']:
+            return Response({"message": "Accès réservé aux administrateurs et instructeurs."}, status=403)
+
+        interns = Intern.objects.select_related('user').all()
+        instructors = Instructor.objects.select_related('user').all()
+        projects = Project.objects.all()
+
+        intern_options = [
+            {
+                'id': intern.user_id,  # Utilise user_id comme identifiant unique
+                'lastname': intern.user.name,
+                'firstname': intern.user.firstname,
+                'avatar': intern.user.image.url if intern.user.image else None,
+            } for intern in interns
+        ]
+        supervisor_options = [
+            {
+                'id': instructor.user_id,  # Utilise user_id comme identifiant unique
+                'lastname': instructor.user.name,
+                'firstname': instructor.user.firstname,
+                'avatar': instructor.user.image.url if instructor.user.image else None,
+                'position': instructor.position,
+            } for instructor in instructors
+        ]
+        project_options = [{'id': project.id, 'title': project.title} for project in projects]
+
+        return Response({
+            'interns': intern_options,
+            'supervisors': supervisor_options,
+            'projects': project_options,
+        })
+
+    def post(self, request):
+        if request.user.role not in ['administrator', 'instructor']:
+            return Response({"message": "Accès réservé aux administrateurs et instructeurs."}, status=403)
+
+        intern_user_id = request.data.get('intern_id')
+        instructor_user_id = request.data.get('instructor_id')
+        project_id = request.data.get('project_id')
+
+        try:
+            intern = Intern.objects.get(user_id=intern_user_id)  # Filtrer par user_id
+            instructor = Instructor.objects.get(user_id=instructor_user_id)  # Filtrer par user_id
+            project = Project.objects.get(id=project_id)
+        except (Intern.DoesNotExist, Instructor.DoesNotExist, Project.DoesNotExist):
+            return Response({"message": "Stagiaire, encadreur ou projet non trouvé."}, status=404)
+
+        try:
+            assignment, created = AssignmentProject.objects.get_or_create(
+                intern=intern,
+                instructor=instructor,
+                project=project,
+                defaults={'created_at': timezone.now()}
+            )
+            if not created:
+                return Response({"message": "Cette assignation existe déjà."}, status=400)
+            return Response({"message": "Assignation créée avec succès."}, status=201)
+        except Exception as e:
+            return Response({"message": f"Erreur lors de la création : {str(e)}"}, status=400)
