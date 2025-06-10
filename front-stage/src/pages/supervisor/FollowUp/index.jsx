@@ -1,162 +1,78 @@
-// eslint-disable-next-line no-unused-vars
+import { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
 import { DataTable } from 'primereact/datatable'
 import { Button } from 'primereact/button'
 import { Column } from 'primereact/column'
 import { useNavigate } from "react-router-dom"
+import axios from 'axios'
 
 const FollowUpSupervisor = () => {
     const navigate = useNavigate()
+    const [interns, setInterns] = useState([])
+    const [projects, setProjects] = useState([])
+    const [reports, setReports] = useState([])
 
     const pageVariants = {
         initial: { opacity: 0, y: -10 },
         in: { opacity: 1, y: 0 },
         out: { opacity: 0, y: -5 },
     }
-
     const pageTransition = {
         duration: 0.5,
     }
 
-    const interns = [
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            progress: 43,
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            progress: 43,
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            progress: 43,
-        },
-        {
-            idIntern: "STA2348988",
-            lastname: "John",
-            firstname: "Doe",
-            daysLeft: 22,
-            project: "Instage",
-            progress: 43,
-        }
-    ]
+    useEffect(() => {
+        const fetchData = async () => {
+            try {
+                const token = localStorage.getItem('access_token');
+                if (!token) {
+                    console.error('Aucun token trouvé dans localStorage');
+                    return;
+                }
+                const response = await axios.get('http://127.0.0.1:8000/api/follow-up-supervisor/', {
+                    headers: { Authorization: `Bearer ${token}` }
+                });
+                setInterns(response.data.interns || []);
+                setProjects(response.data.projects || []);
+                setReports(response.data.reports || []);
+            } catch (error) {
+                console.error('Erreur lors du chargement des données:', error.response ? error.response.data : error.message);
+            }
+        };
+        fetchData();
+    }, []);
 
-    const projects = [
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-        {
-            id: 1,
-            title: "Instage",
-            progress: 43,
-        },
-    ]
+    const idTemplate = (rowData) => (
+        <span>#{rowData.idIntern || rowData.id}</span>
+    )
 
-    const reports = [
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-        },
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-        },
-        {
-            id: 1,
-            title: 'Rapport test front-end',
-            document: 'rapport_test.pdf',
-            date: '2024-05-19',
-            intern: 'John Doe',
-        },
-    ]
+    const nameTemplate = (rowData) => (
+        <span>{rowData.lastname} {rowData.firstname}</span>
+    )
 
-    const idTemplate = (interns) => {
-        return (
-            <span>
-                #{interns.idIntern}
-            </span>
-        )
-    }
+    const progressTemplate = (rowData) => (
+        <span>{rowData.progress}%</span>
+    )
 
-    const nameTemplate = (interns) => {
-        return (
-            <span>
-                {interns.lastname} {interns.firstname}
-            </span>
-        )
-    }
+    const actionTemplate = () => (
+        <i className='pi pi-ellipsis-h'/>
+    )
 
-    const progressTemplate = (interns) => {
-        return (
-            <span>
-                {interns.progress}%
-            </span>
-        )
-    }
+    const folderTemplate = () => (
+        <i className='pi pi-folder'/>
+    )
 
-    const actionTemplate = () => {
-        return (
-            <i className='pi pi-ellipsis-h'/>
-        )
-    }
+    const progressProjectTemplate = (rowData) => (
+        <span>{rowData.progress}%</span>
+    )
 
-    const folderTemplate = () => {
-        return (
-            <i className='pi pi-folder'/>
-        )
-    }
+    const idReportTemplate = (rowData) => (
+        <span>#{rowData.id}</span>
+    )
 
-    const progressProjectTemplate = (projects) => {
-        return (
-            <span>
-                {projects.progress}%
-            </span>
-        )
-    }
-
-    const idReportTemplate = (reports) => {
-        return (
-            <span>
-                #{reports.id}
-            </span>
-        )
-    }
-
-    const actionReportTemplate = () => {
-        return (
-            <i className='pi pi-ellipsis-h'/>
-        )
-    }
+    const actionReportTemplate = () => (
+        <i className='pi pi-ellipsis-h'/>
+    )
 
     return (
         <motion.div
@@ -192,7 +108,7 @@ const FollowUpSupervisor = () => {
                             value={interns}
                             paginator
                             rows={5}
-                            rowsPerPageOptions={[5,10]}
+                            rowsPerPageOptions={[5, 10]}
                         >
                             <Column
                                 header='ID'
@@ -253,7 +169,7 @@ const FollowUpSupervisor = () => {
                         </div>
                     </div>
 
-                    <div >
+                    <div>
                         <Button 
                             icon="pi pi-clock"
                             label="Voir l'historique"

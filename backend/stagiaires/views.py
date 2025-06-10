@@ -1165,3 +1165,64 @@ class ProjectTaskListAPIView(APIView):
 
         return Response(task_data, status=status.HTTP_200_OK)
 
+logger = logging.getLogger(__name__)
+
+class FollowUpSupervisorAPIView(APIView):
+    permission_classes = [IsAuthenticated]
+
+    def get(self, request, *args, **kwargs):
+        logger.info(f"Utilisateur connecté: {request.user.name}, Rôle: {request.user.role}")
+        allowed_roles = ['instructor', 'administrator']
+        if request.user.role not in allowed_roles:
+            logger.warning(f"Accès refusé pour {request.user.name} (rôle: {request.user.role})")
+            return Response({"message": "Accès réservé aux instructeurs et administrateurs."}, status=403)
+
+        today = timezone.now().date()  # 2025-06-10
+        interns_data = []
+        projects_data = []
+        reports_data = []
+
+        # Données des stagiaires supervisés par l'instructeur
+        internships = Internship.objects.filter(instructor__user=request.user).select_related('intern__user', 'instructor__user')
+        for internship in internships:
+            days_left = max(0, (internship.end_date - today).days)
+            assigned_tasks = internship.intern.assignmenttask_set.select_related('task')
+            total_progress = sum(task.task.progression for task in assigned_tasks if task.task.progression is not None) / max(1, assigned_tasks.count()) if assigned_tasks.exists() else 0
+
+            interns_data.append({
+                'idIntern': internship.intern.user.identifier,
+                'lastname': internship.intern.user.name,
+                'firstname': internship.intern.user.firstname,
+                'daysLeft': days_left,
+                'project': internship.theme,
+                'progress': int(total_progress),
+            })
+
+        # Données des projets supervisés
+        projects = Project.objects.filter(internship__instructor__user=request.user).distinct()
+        for project in projects:
+            assigned_tasks = project.internship.intern.assignmenttask_set.select_related('task')
+            progress = sum(task.task.progression for task in assigned_tasks if task.task.progression is not None) / max(1, assigned_tasks.count()) if assigned_tasks.exists() else 0
+            projects_data.append({
+                'id': project.id,
+                'title': project.title,
+                'progress': int(progress),
+            })
+
+        # Données des rapports
+        reports = Report.objects.filter(interview__internship__instructor__user=request.user).select_related('interview__internship__intern__user', 'document')
+        for report in reports:
+            intern_user = report.interview.internship.intern.user
+            reports_data.append({
+                'id': report.id,
+                'title': report.title,
+                'document': report.document.name if report.document else None,
+                'date': report.date.isoformat(),
+                'intern': f"{intern_user.name} {intern_user.firstname}",
+            })
+
+        return Response({
+            'interns': interns_data,
+            'projects': projects_data,
+            'reports': reports_data,
+        })

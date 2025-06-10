@@ -20,4 +20,5 @@ urlpatterns = [
     path('users/create/', CreateUserAPIView.as_view(), name='create-user'),
     path('follow-up-admin/', FollowUpAdminAPIView.as_view(), name='follow-up-admin'),
     path('project/<int:project_id>/tasks/', ProjectTaskListAPIView.as_view(), name='project-task-list'),
+    path('follow-up-supervisor/', FollowUpSupervisorAPIView.as_view(), name='follow-up-supervisor'),
 ]
